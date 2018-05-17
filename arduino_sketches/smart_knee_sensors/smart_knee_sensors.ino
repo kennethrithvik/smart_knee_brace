@@ -344,13 +344,13 @@ void loop()
         char y_value[10];
         char z_value[10];
         dtostrf(1000 * myTopIMU.ax, 4, 3, x_value);
-        client.publish(mqtt_topic, "X-acceleration: "); client.publish(mqtt_topic, x_value);
+        client.publish(mqtt_topic, "TOP:X-acceleration: "); client.publish(mqtt_topic, x_value);
         //client.publish(mqtt_topic, " mg ");
         dtostrf(1000 * myTopIMU.ay, 4, 3, y_value);
-        client.publish(mqtt_topic, "Y-acceleration: "); client.publish(mqtt_topic, y_value);
+        client.publish(mqtt_topic, "TOP:Y-acceleration: "); client.publish(mqtt_topic, y_value);
         //client.publish(mqtt_topic, " mg ");
         dtostrf(1000 * myTopIMU.az, 4, 3, z_value);
-        client.publish(mqtt_topic, "Z-acceleration: "); client.publish(mqtt_topic, z_value);
+        client.publish(mqtt_topic, "TOP:Z-acceleration: "); client.publish(mqtt_topic, z_value);
         //client.publish(mqtt_topic, " mg ");
 
         Serial.print("X-acceleration: "); Serial.print(1000 * myTopIMU.ax);
@@ -362,13 +362,13 @@ void loop()
 
         // Print gyro values in degree/sec
         dtostrf(1000 * myTopIMU.gx, 4, 3, x_value);
-        client.publish(mqtt_topic, "X-gyro rate:: "); client.publish(mqtt_topic, x_value);
+        client.publish(mqtt_topic, "TOP:X-gyro rate:: "); client.publish(mqtt_topic, x_value);
         //client.publish(mqtt_topic, " degrees/sec ");
         dtostrf(1000 * myTopIMU.gy, 4, 3, y_value);
-        client.publish(mqtt_topic, "Y-gyro rate:: "); client.publish(mqtt_topic, y_value);
+        client.publish(mqtt_topic, "TOP:Y-gyro rate:: "); client.publish(mqtt_topic, y_value);
         //client.publish(mqtt_topic, " degrees/sec ");
         dtostrf(1000 * myTopIMU.gz, 4, 3, z_value);
-        client.publish(mqtt_topic, "Z-gyro rate:: "); client.publish(mqtt_topic, z_value);
+        client.publish(mqtt_topic, "TOP:Z-gyro rate:: "); client.publish(mqtt_topic, z_value);
         //client.publish(mqtt_topic, " degrees/sec ");
 
         Serial.print("X-gyro rate: "); Serial.print(myTopIMU.gx, 3);
@@ -391,7 +391,7 @@ void loop()
         myTopIMU.temperature = ((float) myTopIMU.tempCount) / 333.87 + 21.0;
         dtostrf(myTopIMU.temperature, 4, 3, x_value);
         // Print temperature in degrees Centigrade
-        client.publish(mqtt_topic, "Temperature is "); client.publish(mqtt_topic, x_value);
+        client.publish(mqtt_topic, "TOP:Temperature is "); client.publish(mqtt_topic, x_value);
         Serial.print("Temperature is ");  Serial.print(myTopIMU.temperature, 1);
         Serial.println(" degrees C");
       }
@@ -557,13 +557,13 @@ void loop()
         char y_value[10];
         char z_value[10];
         dtostrf(1000 * myTopIMU.ax, 4, 3, x_value);
-        client.publish(mqtt_topic, "X-acceleration: "); client.publish(mqtt_topic, x_value);
+        client.publish(mqtt_topic, "BELOW:X-acceleration: "); client.publish(mqtt_topic, x_value);
         //client.publish(mqtt_topic, " mg ");
         dtostrf(1000 * myTopIMU.ay, 4, 3, y_value);
-        client.publish(mqtt_topic, "Y-acceleration: "); client.publish(mqtt_topic, y_value);
+        client.publish(mqtt_topic, "BELOW:Y-acceleration: "); client.publish(mqtt_topic, y_value);
         //client.publish(mqtt_topic, " mg ");
         dtostrf(1000 * myTopIMU.az, 4, 3, z_value);
-        client.publish(mqtt_topic, "Z-acceleration: "); client.publish(mqtt_topic, z_value);
+        client.publish(mqtt_topic, "BELOW:Z-acceleration: "); client.publish(mqtt_topic, z_value);
         //client.publish(mqtt_topic, " mg ");
 
         Serial.print("X-acceleration: "); Serial.print(1000 * myTopIMU.ax);
@@ -575,13 +575,13 @@ void loop()
 
         // Print gyro values in degree/sec
         dtostrf(1000 * myTopIMU.gx, 4, 3, x_value);
-        client.publish(mqtt_topic, "X-gyro rate:: "); client.publish(mqtt_topic, x_value);
+        client.publish(mqtt_topic, "BELOW:X-gyro rate:: "); client.publish(mqtt_topic, x_value);
         //client.publish(mqtt_topic, " degrees/sec ");
         dtostrf(1000 * myTopIMU.gy, 4, 3, y_value);
-        client.publish(mqtt_topic, "Y-gyro rate:: "); client.publish(mqtt_topic, y_value);
+        client.publish(mqtt_topic, "BELOW:Y-gyro rate:: "); client.publish(mqtt_topic, y_value);
         //client.publish(mqtt_topic, " degrees/sec ");
         dtostrf(1000 * myTopIMU.gz, 4, 3, z_value);
-        client.publish(mqtt_topic, "Z-gyro rate:: "); client.publish(mqtt_topic, z_value);
+        client.publish(mqtt_topic, "BELOW:Z-gyro rate:: "); client.publish(mqtt_topic, z_value);
         //client.publish(mqtt_topic, " degrees/sec ");
 
         Serial.print("X-gyro rate: "); Serial.print(myTopIMU.gx, 3);
@@ -604,7 +604,7 @@ void loop()
         myTopIMU.temperature = ((float) myTopIMU.tempCount) / 333.87 + 21.0;
         dtostrf(myTopIMU.temperature, 4, 3, x_value);
         // Print temperature in degrees Centigrade
-        client.publish(mqtt_topic, "Temperature is "); client.publish(mqtt_topic, x_value);
+        client.publish(mqtt_topic, "BELOW:Temperature is "); client.publish(mqtt_topic, x_value);
         Serial.print("Temperature is ");  Serial.print(myTopIMU.temperature, 1);
         Serial.println(" degrees C");
       }
