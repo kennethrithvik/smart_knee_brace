@@ -9,7 +9,7 @@ import paho.mqtt.client as mqtt
 mqtt_username = "knee_brace"
 mqtt_password = "knee_brace"
 mqtt_topic = "knee_brace_nodemcu"
-mqtt_broker_ip = "192.168.43.168"
+mqtt_broker_ip = "192.168.1.190"
 
 client = mqtt.Client()
 # Set the username and password for the MQTT client
