@@ -19,7 +19,8 @@ client.username_pw_set(mqtt_username, mqtt_password)
 # to the broker, and what happens then the topic receives a message
 def on_connect(client, userdata, rc,test):
     # rc is the error code returned when connecting to the broker
-    print ("Connected!", str(rc),str(test))
+    print ("Connected!", str(client),str(userdata), str(rc),str(test))
+    print ("Topic: ", mqtt_topic + ": ")
     
     # Once the client has connected to the broker, subscribe to the topic
     client.subscribe(mqtt_topic)
@@ -29,7 +30,7 @@ def on_message(client, userdata, msg):
     # If you want to check each message, and do something depending on
     # the content, the code to do this should be run in this function
     
-    print ("Topic: ", msg.topic + "\nMessage: " + str(msg.payload))
+    print (msg.payload.decode("utf-8") )
     
     # The message itself is stored in the msg variable
     # and details about who sent it are stored in userdata
