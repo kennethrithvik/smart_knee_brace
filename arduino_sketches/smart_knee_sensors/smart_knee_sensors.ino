@@ -15,11 +15,11 @@
 
 // WiFi
 // Make sure to update this for your own WiFi network!
-const char* ssid = "ASUS";
-const char* wifi_password = "83419486";
+const char* ssid = "knee_brace";
+const char* wifi_password = "knee_brace";
 // MQTT
 // Make sure to update this for your own MQTT Broker!
-const char* mqtt_server = "192.168.1.190";
+const char* mqtt_server = "192.168.1.24";
 const char* mqtt_topic = "knee_brace_nodemcu";
 const char* mqtt_username = "knee_brace";
 const char* mqtt_password = "knee_brace";
@@ -273,6 +273,9 @@ void loop()
   digitalWrite(below,HIGH);
   digitalWrite(top,LOW);
   Serial.println("__________________TOP______________");
+  char time_now[30];
+  dtostrf(millis(), 30, 3, time_now);
+  client.publish(mqtt_topic, time_now);
   if (myTopIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {
     myTopIMU.readAccelData(myTopIMU.accelCount);  // Read the x/y/z adc values
@@ -334,8 +337,6 @@ void loop()
   if (!AHRS)
   {
     myTopIMU.delt_t = millis() - myTopIMU.count;
-    if (myTopIMU.delt_t > 500)
-    {
       if (SerialDebug)
       {
         //client.publish(mqtt_topic, "Transmission started!")
@@ -396,8 +397,7 @@ void loop()
         Serial.println(" degrees C");
       }
 
-      //myTopIMU.count = millis();
-    } // if (myTopIMU.delt_t > 500)
+      myTopIMU.count = millis();
   } // if (!AHRS)
   else
   {
@@ -405,8 +405,6 @@ void loop()
     myTopIMU.delt_t = millis() - myTopIMU.count;
 
     // update LCD once per half-second independent of read rate
-    if (myTopIMU.delt_t > 500)
-    {
       if (SerialDebug)
       {
         Serial.print("ax = "); Serial.print((int)1000 * myTopIMU.ax);
@@ -475,10 +473,9 @@ void loop()
         Serial.println(" Hz");
       }
 
-      myTopIMU.count = millis();
-      myTopIMU.sumCount = 0;
-      myTopIMU.sum = 0;
-    } // if (myTopIMU.delt_t > 500)
+      //myTopIMU.count = millis();
+      //myTopIMU.sumCount = 0;
+      //myTopIMU.sum = 0;
   } // if (AHRS)
 
   Serial.println("__________________END-TOP______________");
@@ -486,6 +483,8 @@ void loop()
   digitalWrite(top,HIGH);
   digitalWrite(below,LOW);
   Serial.println("__________________BELOW______________");
+  dtostrf(millis(), 30, 3, time_now);
+  client.publish(mqtt_topic, time_now);
   if (myTopIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {
     myTopIMU.readAccelData(myTopIMU.accelCount);  // Read the x/y/z adc values
@@ -547,8 +546,6 @@ void loop()
   if (!AHRS)
   {
     myTopIMU.delt_t = millis() - myTopIMU.count;
-    if (myTopIMU.delt_t > 500)
-    {
       if (SerialDebug)
       {
         //client.publish(mqtt_topic, "Transmission started!")
@@ -610,16 +607,13 @@ void loop()
       }
 
       myTopIMU.count = millis();
-    } // if (myTopIMU.delt_t > 500)
   } // if (!AHRS)
   else
   {
     // Serial print and/or display at 0.5 s rate independent of data rates
-    myTopIMU.delt_t = millis() - myTopIMU.count;
+    //myTopIMU.delt_t = millis() - myTopIMU.count;
 
     // update LCD once per half-second independent of read rate
-    if (myTopIMU.delt_t > 500)
-    {
       if (SerialDebug)
       {
         Serial.print("ax = "); Serial.print((int)1000 * myTopIMU.ax);
@@ -691,8 +685,7 @@ void loop()
       myTopIMU.count = millis();
       myTopIMU.sumCount = 0;
       myTopIMU.sum = 0;
-    } // if (myTopIMU.delt_t > 500)
   } // if (AHRS)
   Serial.println("__________________BELOW______________");
-  delay(500);
+  //delay(500);
 }
