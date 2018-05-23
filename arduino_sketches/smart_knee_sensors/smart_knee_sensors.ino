@@ -19,7 +19,7 @@ const char* ssid = "knee_brace";
 const char* wifi_password = "knee_brace";
 // MQTT
 // Make sure to update this for your own MQTT Broker!
-const char* mqtt_server = "192.168.1.24";
+const char* mqtt_server = "192.168.1.3";
 const char* mqtt_topic = "knee_brace_nodemcu";
 const char* mqtt_username = "knee_brace";
 const char* mqtt_password = "knee_brace";
@@ -38,7 +38,7 @@ const int below=4;
 const uint8_t scl = D6;
 const uint8_t sda = D7;
 
-#define AHRS false         // Set to false for basic data read
+#define AHRS true         // Set to false for basic data read
 #define SerialDebug true  // Set to true to get Serial output for debugging
 #define MPU9250_ADDRESS 0x69
 
@@ -266,16 +266,31 @@ void setup()
 
 void loop()
 {
-
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt
   #define MPU9250_ADDRESS 0x68
   digitalWrite(below,HIGH);
   digitalWrite(top,LOW);
   Serial.println("__________________TOP______________");
+  client.publish(mqtt_topic, "####");
+  getReadings();
+  Serial.println("__________________END-TOP______________");
+  client.publish(mqtt_topic, "####");
+  digitalWrite(top,HIGH);
+  digitalWrite(below,LOW);
+  Serial.println("__________________BELOW______________");
+  client.publish(mqtt_topic, "***");
+  getReadings();
+  Serial.println("__________________END-BELOW______________");
+  client.publish(mqtt_topic, "***");
+}
+
+void getReadings(){
   char time_now[30];
-  dtostrf(millis(), 30, 3, time_now);
+  int time_stamp=millis();
+  dtostrf(time_stamp, 10, 3, time_now);
   client.publish(mqtt_topic, time_now);
+  Serial.println(time_stamp);
   if (myTopIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {
     myTopIMU.readAccelData(myTopIMU.accelCount);  // Read the x/y/z adc values
@@ -401,30 +416,59 @@ void loop()
   } // if (!AHRS)
   else
   {
+    char x_value[10];
+    char y_value[10];
+    char z_value[10];
     // Serial print and/or display at 0.5 s rate independent of data rates
     myTopIMU.delt_t = millis() - myTopIMU.count;
 
-    // update LCD once per half-second independent of read rate
       if (SerialDebug)
       {
+        
+        dtostrf((int)1000 * myTopIMU.ax, 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.print("ax = "); Serial.print((int)1000 * myTopIMU.ax);
+        dtostrf((int)1000 * myTopIMU.ay, 4, 3, y_value);
+        client.publish(mqtt_topic, y_value);
         Serial.print(" ay = "); Serial.print((int)1000 * myTopIMU.ay);
+        dtostrf((int)1000 * myTopIMU.az, 4, 3, z_value);
+        client.publish(mqtt_topic, z_value);
         Serial.print(" az = "); Serial.print((int)1000 * myTopIMU.az);
         Serial.println(" mg");
 
+        dtostrf((int)1000 * myTopIMU.gx, 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.print("gx = "); Serial.print( myTopIMU.gx, 2);
+        dtostrf((int)1000 * myTopIMU.gy, 4, 3, y_value);
+        client.publish(mqtt_topic, y_value);
         Serial.print(" gy = "); Serial.print( myTopIMU.gy, 2);
+        dtostrf((int)1000 * myTopIMU.gz, 4, 3, z_value);
+        client.publish(mqtt_topic, z_value);
         Serial.print(" gz = "); Serial.print( myTopIMU.gz, 2);
         Serial.println(" deg/s");
 
+        dtostrf((int)1000 * myTopIMU.mx, 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.print("mx = "); Serial.print( (int)myTopIMU.mx );
+        dtostrf((int)1000 * myTopIMU.my, 4, 3, y_value);
+        client.publish(mqtt_topic, y_value);
         Serial.print(" my = "); Serial.print( (int)myTopIMU.my );
+        dtostrf((int)1000 * myTopIMU.mz, 4, 3, z_value);
+        client.publish(mqtt_topic, z_value);
         Serial.print(" mz = "); Serial.print( (int)myTopIMU.mz );
         Serial.println(" mG");
 
+        dtostrf(*getQ(), 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.print("q0 = "); Serial.print(*getQ());
+        dtostrf(*(getQ() + 1), 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.print(" qx = "); Serial.print(*(getQ() + 1));
+        dtostrf(*(getQ() + 2), 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.print(" qy = "); Serial.print(*(getQ() + 2));
+        dtostrf(*(getQ() + 3), 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.print(" qz = "); Serial.println(*(getQ() + 3));
       }
 
@@ -462,219 +506,16 @@ void loop()
       if (SerialDebug)
       {
         Serial.print("Yaw, Pitch, Roll: ");
+        dtostrf(myTopIMU.yaw, 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.print(myTopIMU.yaw, 2);
         Serial.print(", ");
+        dtostrf(myTopIMU.pitch, 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.print(myTopIMU.pitch, 2);
         Serial.print(", ");
-        Serial.println(myTopIMU.roll, 2);
-
-        Serial.print("rate = ");
-        Serial.print((float)myTopIMU.sumCount / myTopIMU.sum, 2);
-        Serial.println(" Hz");
-      }
-
-      //myTopIMU.count = millis();
-      //myTopIMU.sumCount = 0;
-      //myTopIMU.sum = 0;
-  } // if (AHRS)
-
-  Serial.println("__________________END-TOP______________");
-  #define MPU9250_ADDRESS 0x68
-  digitalWrite(top,HIGH);
-  digitalWrite(below,LOW);
-  Serial.println("__________________BELOW______________");
-  dtostrf(millis(), 30, 3, time_now);
-  client.publish(mqtt_topic, time_now);
-  if (myTopIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
-  {
-    myTopIMU.readAccelData(myTopIMU.accelCount);  // Read the x/y/z adc values
-    myTopIMU.getAres();
-
-    // Now we'll calculate the accleration value into actual g's
-    // This depends on scale being set
-    myTopIMU.ax = (float)myTopIMU.accelCount[0] * myTopIMU.aRes; // - accelBias[0];
-    myTopIMU.ay = (float)myTopIMU.accelCount[1] * myTopIMU.aRes; // - accelBias[1];
-    myTopIMU.az = (float)myTopIMU.accelCount[2] * myTopIMU.aRes; // - accelBias[2];
-
-    myTopIMU.readGyroData(myTopIMU.gyroCount);  // Read the x/y/z adc values
-    myTopIMU.getGres();
-
-    // Calculate the gyro value into actual degrees per second
-    // This depends on scale being set
-    myTopIMU.gx = (float)myTopIMU.gyroCount[0] * myTopIMU.gRes;
-    myTopIMU.gy = (float)myTopIMU.gyroCount[1] * myTopIMU.gRes;
-    myTopIMU.gz = (float)myTopIMU.gyroCount[2] * myTopIMU.gRes;
-
-    myTopIMU.readMagData(myTopIMU.magCount);  // Read the x/y/z adc values
-    myTopIMU.getMres();
-    // User environmental x-axis correction in milliGauss, should be
-    // automatically calculated
-    myTopIMU.magbias[0] = +470.;
-    // User environmental x-axis correction in milliGauss TODO axis??
-    myTopIMU.magbias[1] = +120.;
-    // User environmental x-axis correction in milliGauss
-    myTopIMU.magbias[2] = +125.;
-
-    // Calculate the magnetometer values in milliGauss
-    // Include factory calibration per data sheet and user environmental
-    // corrections
-    // Get actual magnetometer value, this depends on scale being set
-    myTopIMU.mx = (float)myTopIMU.magCount[0] * myTopIMU.mRes * myTopIMU.magCalibration[0] -
-                  myTopIMU.magbias[0];
-    myTopIMU.my = (float)myTopIMU.magCount[1] * myTopIMU.mRes * myTopIMU.magCalibration[1] -
-                  myTopIMU.magbias[1];
-    myTopIMU.mz = (float)myTopIMU.magCount[2] * myTopIMU.mRes * myTopIMU.magCalibration[2] -
-                  myTopIMU.magbias[2];
-  } // if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
-
-  // Must be called before updating quaternions!
-  myTopIMU.updateTime();
-
-  // Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of
-  // the magnetometer; the magnetometer z-axis (+ down) is opposite to z-axis
-  // (+ up) of accelerometer and gyro! We have to make some allowance for this
-  // orientationmismatch in feeding the output to the quaternion filter. For the
-  // MPU-9250, we have chosen a magnetic rotation that keeps the sensor forward
-  // along the x-axis just like in the LSM9DS0 sensor. This rotation can be
-  // modified to allow any convenient orientation convention. This is ok by
-  // aircraft orientation standards! Pass gyro rate as rad/s
-  //  MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f,  my,  mx, mz);
-  MahonyQuaternionUpdate(myTopIMU.ax, myTopIMU.ay, myTopIMU.az, myTopIMU.gx * DEG_TO_RAD,
-                         myTopIMU.gy * DEG_TO_RAD, myTopIMU.gz * DEG_TO_RAD, myTopIMU.my,
-                         myTopIMU.mx, myTopIMU.mz, myTopIMU.deltat);
-
-  if (!AHRS)
-  {
-    myTopIMU.delt_t = millis() - myTopIMU.count;
-      if (SerialDebug)
-      {
-        //client.publish(mqtt_topic, "Transmission started!")
-        // Print acceleration values in milligs!
-        char x_value[10];
-        char y_value[10];
-        char z_value[10];
-        dtostrf(1000 * myTopIMU.ax, 4, 3, x_value);
-        client.publish(mqtt_topic, "BELOW:X-acceleration: "); client.publish(mqtt_topic, x_value);
-        //client.publish(mqtt_topic, " mg ");
-        dtostrf(1000 * myTopIMU.ay, 4, 3, y_value);
-        client.publish(mqtt_topic, "BELOW:Y-acceleration: "); client.publish(mqtt_topic, y_value);
-        //client.publish(mqtt_topic, " mg ");
-        dtostrf(1000 * myTopIMU.az, 4, 3, z_value);
-        client.publish(mqtt_topic, "BELOW:Z-acceleration: "); client.publish(mqtt_topic, z_value);
-        //client.publish(mqtt_topic, " mg ");
-
-        Serial.print("X-acceleration: "); Serial.print(1000 * myTopIMU.ax);
-        Serial.print(" mg ");
-        Serial.print("Y-acceleration: "); Serial.print(1000 * myTopIMU.ay);
-        Serial.print(" mg ");
-        Serial.print("Z-acceleration: "); Serial.print(1000 * myTopIMU.az);
-        Serial.println(" mg ");
-
-        // Print gyro values in degree/sec
-        dtostrf(1000 * myTopIMU.gx, 4, 3, x_value);
-        client.publish(mqtt_topic, "BELOW:X-gyro rate:: "); client.publish(mqtt_topic, x_value);
-        //client.publish(mqtt_topic, " degrees/sec ");
-        dtostrf(1000 * myTopIMU.gy, 4, 3, y_value);
-        client.publish(mqtt_topic, "BELOW:Y-gyro rate:: "); client.publish(mqtt_topic, y_value);
-        //client.publish(mqtt_topic, " degrees/sec ");
-        dtostrf(1000 * myTopIMU.gz, 4, 3, z_value);
-        client.publish(mqtt_topic, "BELOW:Z-gyro rate:: "); client.publish(mqtt_topic, z_value);
-        //client.publish(mqtt_topic, " degrees/sec ");
-
-        Serial.print("X-gyro rate: "); Serial.print(myTopIMU.gx, 3);
-        Serial.print(" degrees/sec ");
-        Serial.print("Y-gyro rate: "); Serial.print(myTopIMU.gy, 3);
-        Serial.print(" degrees/sec ");
-        Serial.print("Z-gyro rate: "); Serial.print(myTopIMU.gz, 3);
-        Serial.println(" degrees/sec");
-
-        // Print mag values in degree/sec
-        Serial.print("X-mag field: "); Serial.print(myTopIMU.mx);
-        Serial.print(" mG ");
-        Serial.print("Y-mag field: "); Serial.print(myTopIMU.my);
-        Serial.print(" mG ");
-        Serial.print("Z-mag field: "); Serial.print(myTopIMU.mz);
-        Serial.println(" mG");
-
-        myTopIMU.tempCount = myTopIMU.readTempData();  // Read the adc values
-        // Temperature in degrees Centigrade
-        myTopIMU.temperature = ((float) myTopIMU.tempCount) / 333.87 + 21.0;
-        dtostrf(myTopIMU.temperature, 4, 3, x_value);
-        // Print temperature in degrees Centigrade
-        client.publish(mqtt_topic, "BELOW:Temperature is "); client.publish(mqtt_topic, x_value);
-        Serial.print("Temperature is ");  Serial.print(myTopIMU.temperature, 1);
-        Serial.println(" degrees C");
-      }
-
-      myTopIMU.count = millis();
-  } // if (!AHRS)
-  else
-  {
-    // Serial print and/or display at 0.5 s rate independent of data rates
-    //myTopIMU.delt_t = millis() - myTopIMU.count;
-
-    // update LCD once per half-second independent of read rate
-      if (SerialDebug)
-      {
-        Serial.print("ax = "); Serial.print((int)1000 * myTopIMU.ax);
-        Serial.print(" ay = "); Serial.print((int)1000 * myTopIMU.ay);
-        Serial.print(" az = "); Serial.print((int)1000 * myTopIMU.az);
-        Serial.println(" mg");
-
-        Serial.print("gx = "); Serial.print( myTopIMU.gx, 2);
-        Serial.print(" gy = "); Serial.print( myTopIMU.gy, 2);
-        Serial.print(" gz = "); Serial.print( myTopIMU.gz, 2);
-        Serial.println(" deg/s");
-
-        Serial.print("mx = "); Serial.print( (int)myTopIMU.mx );
-        Serial.print(" my = "); Serial.print( (int)myTopIMU.my );
-        Serial.print(" mz = "); Serial.print( (int)myTopIMU.mz );
-        Serial.println(" mG");
-
-        Serial.print("q0 = "); Serial.print(*getQ());
-        Serial.print(" qx = "); Serial.print(*(getQ() + 1));
-        Serial.print(" qy = "); Serial.print(*(getQ() + 2));
-        Serial.print(" qz = "); Serial.println(*(getQ() + 3));
-      }
-
-      // Define output variables from updated quaternion---these are Tait-Bryan
-      // angles, commonly used in aircraft orientation. In this coordinate system,
-      // the positive z-axis is down toward Earth. Yaw is the angle between Sensor
-      // x-axis and Earth magnetic North (or true North if corrected for local
-      // declination, looking down on the sensor positive yaw is counterclockwise.
-      // Pitch is angle between sensor x-axis and Earth ground plane, toward the
-      // Earth is positive, up toward the sky is negative. Roll is angle between
-      // sensor y-axis and Earth ground plane, y-axis up is positive roll. These
-      // arise from the definition of the homogeneous rotation matrix constructed
-      // from quaternions. Tait-Bryan angles as well as Euler angles are
-      // non-commutative; that is, the get the correct orientation the rotations
-      // must be applied in the correct order which for this configuration is yaw,
-      // pitch, and then roll.
-      // For more see
-      // http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-      // which has additional links.
-      myTopIMU.yaw   = atan2(2.0f * (*(getQ() + 1) * *(getQ() + 2) + *getQ() *
-                                     *(getQ() + 3)), *getQ() * *getQ() + * (getQ() + 1) * *(getQ() + 1)
-                             - * (getQ() + 2) * *(getQ() + 2) - * (getQ() + 3) * *(getQ() + 3));
-      myTopIMU.pitch = -asin(2.0f * (*(getQ() + 1) * *(getQ() + 3) - *getQ() *
-                                     *(getQ() + 2)));
-      myTopIMU.roll  = atan2(2.0f * (*getQ() * *(getQ() + 1) + * (getQ() + 2) *
-                                     *(getQ() + 3)), *getQ() * *getQ() - * (getQ() + 1) * *(getQ() + 1)
-                             - * (getQ() + 2) * *(getQ() + 2) + * (getQ() + 3) * *(getQ() + 3));
-      myTopIMU.pitch *= RAD_TO_DEG;
-      myTopIMU.yaw   *= RAD_TO_DEG;
-      // Declination of NUS, Singapore
-      // - http://www.ngdc.noaa.gov/geomag-web/#declination
-      myTopIMU.yaw   += 0.2;
-      myTopIMU.roll  *= RAD_TO_DEG;
-
-      if (SerialDebug)
-      {
-        Serial.print("Yaw, Pitch, Roll: ");
-        Serial.print(myTopIMU.yaw, 2);
-        Serial.print(", ");
-        Serial.print(myTopIMU.pitch, 2);
-        Serial.print(", ");
+        dtostrf(myTopIMU.roll, 4, 3, x_value);
+        client.publish(mqtt_topic, x_value);
         Serial.println(myTopIMU.roll, 2);
 
         Serial.print("rate = ");
@@ -686,6 +527,6 @@ void loop()
       myTopIMU.sumCount = 0;
       myTopIMU.sum = 0;
   } // if (AHRS)
-  Serial.println("__________________END-BELOW______________");
-  //delay(500);
+
 }
+
