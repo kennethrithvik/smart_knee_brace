@@ -686,6 +686,6 @@ void loop()
       myTopIMU.sumCount = 0;
       myTopIMU.sum = 0;
   } // if (AHRS)
-  Serial.println("__________________BELOW______________");
+  Serial.println("__________________END-BELOW______________");
   //delay(500);
 }
