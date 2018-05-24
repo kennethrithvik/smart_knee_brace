@@ -158,7 +158,7 @@ def client_loop(client,broker,port=1883,topics="",\
 
 
 def subscribe_topics(client,topics,qos=0):
-    """ Subscribes to topics and stores acknowledgements"""
+   """ Subscribes to topics and stores acknowledgements"""
    
    if type(topics) is not list: #topics should be list of tuples
       if type(topics) is not tuple: #topics isn't tuple?
@@ -250,7 +250,7 @@ def Connect(client,broker,port,keepalive,run_forever=False):
 
 def wait_for(client,msgType,period=.25,wait_time=40,running_loop=False):
     """Will wait for a particular event gives up after period*wait_time, Default=10
-seconds.Returns True if succesful False if fails"""
+    seconds.Returns True if succesful False if fails"""
     #running loop is true when using loop_start or loop_forever
     client.running_loop=running_loop #
     wcount=0  

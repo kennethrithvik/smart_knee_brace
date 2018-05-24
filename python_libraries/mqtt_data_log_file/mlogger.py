@@ -40,8 +40,8 @@ Data can be stored as plain text or in JSON format """
             print("closing log file")
             self.fo.close()
     def create_log_dir(self,log_dir):
-    """Function for creating new log directories
-    using the timestamp for the name"""   
+        """Function for creating new log directories
+        using the timestamp for the name"""   
         self.t=time.localtime(time.time())
         
         self.time_stamp=(str(self.t[1])+"-"+str(self.t[2])+"-"+                                          
