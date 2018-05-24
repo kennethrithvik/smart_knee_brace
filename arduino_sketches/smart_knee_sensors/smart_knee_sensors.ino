@@ -115,18 +115,14 @@ void setup()
   // client.connect returns a boolean value to let us know if the connection was successful.
   // If the connection is failing, make sure you are using the correct MQTT Username and Password (Setup Earlier in the Instructable)
   Serial.print("MQTT connecting");
-  if (client.connect(clientID, mqtt_username, mqtt_password)) {
-    Serial.println("Connected to MQTT Broker!");
-    if (client.publish(mqtt_topic, "Transmission started!")) {
-      char ip_address[20];
-      WiFi.localIP().toString().toCharArray(ip_address, 15);
-      client.publish(mqtt_topic, ip_address);
-      Serial.println("Transmission started");
-    }
+  while(!client.connect(clientID, mqtt_username, mqtt_password)) {
+    delay(500);
+    Serial.print(".");
   }
-  else {
-    Serial.println("Connection to MQTT Broker failed...");
-  }
+  Serial.println("Connected to MQTT Broker!");
+  Serial.println("Transmission started");
+  digitalWrite(below,HIGH);
+  digitalWrite(top,LOW);
   scanDevices();
 
 
@@ -419,7 +415,6 @@ void getReadings(){
     char x_value[10];
     char y_value[10];
     char z_value[10];
-    // Serial print and/or display at 0.5 s rate independent of data rates
     myTopIMU.delt_t = millis() - myTopIMU.count;
 
       if (SerialDebug)
