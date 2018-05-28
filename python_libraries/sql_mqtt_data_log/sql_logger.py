@@ -23,22 +23,6 @@ class SQL_data_logger():
      
         self.conn.commit()
 
-    def Log_message(self,table_name,data): #not used anymore
-        #print("table ",table_name)
-        #print("data to log ",data)
-        broker = data["broker"]
-        time_taken = data["time_taken"]
-        time = data["time"]
-        #interval =data["interval"]
-        count=data["count"]
-
-        r=self.cur.execute('''INSERT INTO '''+ \
-        table_name +'''(broker, time_taken, time, count) 
-        VALUES(?,?,?,?)''', (broker,time_taken,time, count))
-        if self.verbose:
-            print('inserted ',r)
-     
-        self.conn.commit()
     def drop_table(self,table_name):
         """ drop a table """
         sql_drop_table="DROP TABLE "+table_name +";"        

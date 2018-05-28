@@ -20,7 +20,7 @@ const char* ssid = "knee_brace";
 const char* wifi_password = "knee_brace";
 // MQTT
 // Make sure to update this for your own MQTT Broker!
-const char* mqtt_server = "192.168.1.3";
+const char* mqtt_server = "192.168.1.4";
 const char* mqtt_topic = "knee_brace_nodemcu";
 const char* mqtt_username = "knee_brace";
 const char* mqtt_password = "knee_brace";
@@ -263,7 +263,12 @@ void setup()
 String reading = "";
 void loop()
 {
+  client.publish(mqtt_topic, "***");
   reading = "";
+  int time_stamp = millis();
+  client.publish(mqtt_topic, String(time_stamp).c_str(), true);
+  //reading=reading+String("timestamp,")+String(time_stamp)+String(",");
+  Serial.println(time_stamp);
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt
   int freq = millis();
@@ -278,7 +283,8 @@ void loop()
   Serial.println("__________________BELOW______________");
   getReadings();
   Serial.println("__________________END-BELOW______________");
-  client.publish(mqtt_topic, reading.c_str(), true);
+  //reading=reading+String("\0");
+  //client.publish(mqtt_topic, reading.c_str(), true);
   freq = millis() - freq;
   Serial.print("rate = ");
   Serial.print((float)1000 / freq, 3);
@@ -286,9 +292,10 @@ void loop()
 }
 
 void getReadings() {
-  int time_stamp = millis();
-  client.publish(mqtt_topic, String(time_stamp).c_str(), true);
-  Serial.println(time_stamp);
+  //int time_stamp = millis();
+  //client.publish(mqtt_topic, String(time_stamp).c_str(), true);
+  //reading=reading+String(",timestamp,")+String(time_stamp)+String(",");
+  //Serial.println(time_stamp);
 
 
   if (myTopIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
@@ -417,40 +424,50 @@ void getReadings() {
     myTopIMU.delt_t = millis() - myTopIMU.count;
     if (SerialDebug)
     {
-
-      reading = String((int)1000 * myTopIMU.ax);
-
       client.publish(mqtt_topic, String((int)1000 * myTopIMU.ax).c_str(), true);
+      //reading=reading+String("acx,")+String((int)1000 * myTopIMU.ax)+String(",");
       Serial.print("ax = "); Serial.print((int)1000 * myTopIMU.ax);
       client.publish(mqtt_topic, String((int)1000 * myTopIMU.ay).c_str(), true);
+      //reading=reading+String("acy,")+String((int)1000 * myTopIMU.ay)+String(",");
       Serial.print(" ay = "); Serial.print((int)1000 * myTopIMU.ay);
       client.publish(mqtt_topic, String((int)1000 * myTopIMU.az).c_str(), true);
+      //reading=reading+String("acz,")+String((int)1000 * myTopIMU.az)+String(",");
       Serial.print(" az = "); Serial.print((int)1000 * myTopIMU.az);
       Serial.println(" mg");
 
-      client.publish(mqtt_topic, String((int)1000 * myTopIMU.gx).c_str(), true);
+      client.publish(mqtt_topic, String(myTopIMU.gx).c_str(), true);
+      //reading=reading+String("gyx,")+String(myTopIMU.gx)+String(",");
       Serial.print("gx = "); Serial.print( myTopIMU.gx, 2);
-      client.publish(mqtt_topic, String((int)1000 * myTopIMU.gy).c_str(), true);
+      client.publish(mqtt_topic, String(myTopIMU.gy).c_str(), true);
+      //reading=reading+String("gyy,")+String(myTopIMU.gy)+String(",");
       Serial.print(" gy = "); Serial.print( myTopIMU.gy, 2);
-      client.publish(mqtt_topic, String((int)1000 * myTopIMU.gz).c_str(), true);
+      client.publish(mqtt_topic, String(myTopIMU.gz).c_str(), true);
+      //reading=reading+String("gyz,")+String(myTopIMU.gz)+String(",");
       Serial.print(" gz = "); Serial.print( myTopIMU.gz, 2);
       Serial.println(" deg/s");
 
-      client.publish(mqtt_topic, String((int)1000 * myTopIMU.mx).c_str(), true);
+      client.publish(mqtt_topic, String((int)myTopIMU.mx).c_str(), true);
+      //reading=reading+String("mgx,")+String((int)myTopIMU.mx)+String(",");
       Serial.print("mx = "); Serial.print( (int)myTopIMU.mx );
-      client.publish(mqtt_topic, String((int)1000 * myTopIMU.my).c_str(), true);
+      client.publish(mqtt_topic, String((int)myTopIMU.my).c_str(), true);
+      //reading=reading+String("mgy,")+String((int)myTopIMU.my)+String(",");
       Serial.print(" my = "); Serial.print( (int)myTopIMU.my );
-      client.publish(mqtt_topic, String((int)1000 * myTopIMU.mz).c_str(), true);
+      client.publish(mqtt_topic, String((int)myTopIMU.mz).c_str(), true);
+      //reading=reading+String("mgz,")+String((int)myTopIMU.mz)+String(",");
       Serial.print(" mz = "); Serial.print( (int)myTopIMU.mz );
       Serial.println(" mG");
 
       client.publish(mqtt_topic, String(*getQ()).c_str(), true);
+      //reading=reading+String("q0,")+String(*getQ())+String(",");
       Serial.print("q0 = "); Serial.print(*getQ());
       client.publish(mqtt_topic, String(*(getQ() + 1)).c_str(), true);
+      //reading=reading+String("qx,")+String(*(getQ() + 1))+String(",");
       Serial.print(" qx = "); Serial.print(*(getQ() + 1));
       client.publish(mqtt_topic, String(*(getQ() + 2)).c_str(), true);
+      //reading=reading+String("qy,")+String(*(getQ() + 2))+String(",");
       Serial.print(" qy = "); Serial.print(*(getQ() + 2));
       client.publish(mqtt_topic, String(*(getQ() + 3)).c_str(), true);
+      //reading=reading+String("qz,")+String(*(getQ() + 3))+String(",");
       Serial.print(" qz = "); Serial.println(*(getQ() + 3));
     }
 
@@ -489,18 +506,22 @@ void getReadings() {
     {
       Serial.print("Yaw, Pitch, Roll: ");
       client.publish(mqtt_topic, String(myTopIMU.yaw).c_str(), true);
+      //reading=reading+String("yaw,")+String(myTopIMU.yaw)+String(",");
       Serial.print(myTopIMU.yaw, 2);
       Serial.print(", ");
       client.publish(mqtt_topic, String(myTopIMU.pitch).c_str(), true);
+      //reading=reading+String("pitch,")+String(myTopIMU.pitch)+String(",");
       Serial.print(myTopIMU.pitch, 2);
       Serial.print(", ");
       client.publish(mqtt_topic, String(myTopIMU.roll).c_str(), true);
+      //reading=reading+String("roll,")+String(myTopIMU.roll)+String(",");
       Serial.println(myTopIMU.roll, 2);
 
       myTopIMU.tempCount = myTopIMU.readTempData();  // Read the adc values
       // Temperature in degrees Centigrade
       myTopIMU.temperature = ((float) myTopIMU.tempCount) / 333.87 + 21.0;
       client.publish(mqtt_topic, String(myTopIMU.temperature).c_str(), true);
+      //reading=reading+String("temperature,")+String(myTopIMU.temperature);
       Serial.print("Temperature is ");  Serial.print(myTopIMU.temperature, 1);
       Serial.println(" degrees C");
     }

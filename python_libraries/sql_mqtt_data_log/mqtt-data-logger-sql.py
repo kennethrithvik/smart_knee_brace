@@ -33,20 +33,49 @@ options["broker"]=brokers[1]
 options["port"]=1883
 options["verbose"]=True
 options["cname"]=""
-options["topics"]=[("$SYS/#",0)]
-options["topics"]=[("bbc/#",0),("homeautomation",0),("/HomeCtrl",0),\
-                   ("/hometest",0)]
-options["topics"]=[("steves-house/#",0)]
+options["topics"]=[("knee_brace_nodemcu/#",0)]
 
 #sql
-db_file="logs.db"
-Table_name="logs"
+db_file="sensor.db"
+Table_name="sensor"
 table_fields={
     "id":"integer primary key autoincrement",
-    "time":"int",
-    "topic":"text",
-    "sensor":"text",
-    "message": "text",}
+    "timestamp": "text",
+    "top_accel_x": "text",
+    "top_accel_y": "text",
+    "top_accel_z": "text",
+    "top_mag_x": "text",
+    "top_mag_y": "text",
+    "top_mag_z": "text",
+    "top_gy_x": "text",
+    "top_gy_y": "text",
+    "top_gy_z": "text",
+    "top_q0": "text",
+    "top_qx": "text",
+    "top_qy": "text",
+    "top_qz": "text",
+    "top_yaw": "text",
+    "top_pitch": "text",
+    "top_roll": "text",
+    "top_temperature": "text",
+    "bottom_accel_x": "text",
+    "bottom_accel_y": "text",
+    "bottom_accel_z": "text",
+    "bottom_mag_x": "text",
+    "bottom_mag_y": "text",
+    "bottom_mag_z": "text",
+    "bottom_gy_x": "text",
+    "bottom_gy_y": "text",
+    "bottom_gy_z": "text",
+    "bottom_q0": "text",
+    "bottom_qx": "text",
+    "bottom_qy": "text",
+    "bottom_qz": "text",
+    "bottom_yaw": "text",
+    "bottom_pitch": "text",
+    "bottom_roll": "text",
+    "bottom_temperature": "text",
+    }
 ###
 cname=""
 sub_flag=""
@@ -125,52 +154,58 @@ def on_disconnect(client, userdata, rc):
     client.disconnect_flag=True
     client.subscribe_flag=False
     
-def on_subscribe(client,userdata,mid,granted_qos):
-    m="in on subscribe callback result "+str(mid)
-    logging.debug(m)
-    client.subscribed_flag=True
 def on_message(client,userdata, msg):
     topic=msg.topic
     m_decode=str(msg.payload.decode("utf-8","ignore"))
     message_handler(client,m_decode,topic)
+
+def on_subscribe(client,userdata,mid,granted_qos):
+    m="in on subscribe callback result "+str(mid)
+    logging.debug(m)
+    client.subscribed_flag=True
+
     #print("message received")
 def message_handler(client,msg,topic):
-    data=dict()
-    tnow=time.localtime(time.time())
-    m=time.asctime(tnow)+" "+topic+" "+msg
-    data["time"]=int(time.time())
-    data["topic"]=topic
-    data["message"]=msg
-    if verbose or has_changed(topic,msg):
+    #data=dict()
+    #data["topic"]=topic
+    #data["message"]=msg
+    if verbose :
         #print("storing changed data",topic, "   ",msg)
-        q.put(data) #put messages on queue
+        q.put(msg) #put messages on queue
 
-def has_changed(topic,msg):
-    topic2=topic.lower()
-    if topic in last_message:
-        if last_message[topic]==msg:
-            return False
-    last_message[topic]=msg
-    return True
 def log_worker():
     """runs in own thread to log data"""
     #create logger
     logger=SQL_data_logger(db_file)
-    logger.drop_table("logs")
-    logger.create_table("logs",table_fields)
+    logger.drop_table(Table_name)
+    logger.create_table(Table_name,table_fields)
+    readings=[]
     while Log_worker_flag:
         while not q.empty():
             data = q.get()
             if data is None:
                 continue
+            if data == "***":
+                readings=[]
+                for i in range(35):
+                    data = q.get()
+                    if data == "***":
+                        q.put("***")
+                        continue
+                    readings.append(data)
+                #print(readings)
+                
+                
             try:
-                time=data["time"]
-                topic=data["topic"]
-                message=data["message"]
-                sensor="Dummy-sensor"
-                data_out=[time,topic,sensor,message]
+                data_out=readings
                 data_query="INSERT INTO "+ \
-                Table_name +"(time,topic,sensor,message)VALUES(?,?,?,?)"   
+                Table_name +"(timestamp,top_accel_x,top_accel_y,top_accel_z,top_mag_x,\
+                top_mag_y,top_mag_z,top_gy_x,top_gy_y,top_gy_z,top_q0,top_qx,top_qy,top_qz,\
+                top_yaw,top_pitch,top_roll,top_temperature,bottom_accel_x,bottom_accel_y,\
+                bottom_accel_z,bottom_mag_x,bottom_mag_y,bottom_mag_z,bottom_gy_x,bottom_gy_y,\
+                bottom_gy_z,bottom_q0,bottom_qx,bottom_qy,bottom_qz,bottom_yaw,bottom_pitch,\
+                bottom_roll,bottom_temperature)\
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"   
                 logger.Log_sensor(data_query,data_out)
             except Exception as e:
                 print("problem with logging ",e)
@@ -219,15 +254,12 @@ if not options["cname"]:
     cname="logger-"+str(r)
 else:
     cname="logger-"+str(options["cname"])
-
-
-if username !="":
-    client1.username_pw_set(username, password)
-
-        
+       
 #Initialise_client_object() # add extra flags
 logging.info("creating client"+cname)
 client=Initialise_clients(cname,False)#create and initialise client object
+if username !="":
+    client.username_pw_set(username, password)
 topics=options["topics"]
 broker=options["broker"]
 port=1883
