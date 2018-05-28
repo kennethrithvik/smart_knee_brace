@@ -19,18 +19,17 @@ from queue import Queue
 q=Queue()
 
 ##### User configurable data section
-username=""
-password=""
-verbose=False #True to display all messages, False to display only changed messages
+username="knee_brace"
+password="knee_brace"
+verbose=True #True to display all messages, False to display only changed messages
 mqttclient_log=False #MQTT client logs showing messages
 logging.basicConfig(level=logging.INFO) #error logging
 #use DEBUG,INFO,WARNING
 ####
 options=dict()
 ##EDIT HERE ###############
-brokers=["192.168.1.157","192.168.1.186","192.168.1.206","192.168.1.185",\
-         "test.mosquitto.org","broker.hivemq.com","iot.eclipse.org"]
-options["broker"]=brokers[4]
+brokers=["192.168.1.24","192.168.1.3","192.168.1.5","192.168.1.190"]
+options["broker"]=brokers[1]
 options["port"]=1883
 options["verbose"]=True
 options["cname"]=""
@@ -60,9 +59,9 @@ def command_input(options={}):
     qos_in=[]
 
     valid_options=" -b <broker> -p <port>-t <topic> -q QOS -v <verbose> -h <help>\
--c <loop Time secs -d logging debug  -n Client ID or Name\
--i loop Interval -u Username -P Password\
-"
+    -c <loop Time secs -d logging debug  -n Client ID or Name\
+    -i loop Interval -u Username -P Password\
+    "
     print_options_flag=False
     try:
       opts, args = getopt.getopt(sys.argv[1:],"hb:i:dk:p:t:q:l:vn:u:P:")
@@ -142,7 +141,7 @@ def message_handler(client,msg,topic):
     data["time"]=int(time.time())
     data["topic"]=topic
     data["message"]=msg
-    if has_changed(topic,msg):
+    if verbose or has_changed(topic,msg):
         #print("storing changed data",topic, "   ",msg)
         q.put(data) #put messages on queue
 

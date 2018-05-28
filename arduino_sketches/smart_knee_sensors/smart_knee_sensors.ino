@@ -12,6 +12,7 @@
 #include "MPU9250.h"
 #include <ESP8266WiFi.h> // Enables the ESP8266 to connect to the local network (via WiFi)
 #include <PubSubClient.h> // Allows us to connect to, and publish to the MQTT broker
+#include <sstream>
 
 // WiFi
 // Make sure to update this for your own WiFi network!
@@ -31,8 +32,8 @@ WiFiClient wifiClient;
 PubSubClient client(mqtt_server, 1883, wifiClient); // 1883 is the listener port for the Broker
 
 //Define pins for two IMU
-const int top =5;
-const int below=4;
+const int top = 5;
+const int below = 4;
 
 // Select SDA and SCL pins for I2C communication
 const uint8_t scl = D6;
@@ -92,7 +93,7 @@ void setup()
 
   pinMode(top, OUTPUT);
   pinMode(below, OUTPUT);
-  
+
   //WIFI CONNECTION
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -115,20 +116,20 @@ void setup()
   // client.connect returns a boolean value to let us know if the connection was successful.
   // If the connection is failing, make sure you are using the correct MQTT Username and Password (Setup Earlier in the Instructable)
   Serial.print("MQTT connecting");
-  while(!client.connect(clientID, mqtt_username, mqtt_password)) {
+  while (!client.connect(clientID, mqtt_username, mqtt_password)) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("Connected to MQTT Broker!");
   Serial.println("Transmission started");
-  digitalWrite(below,HIGH);
-  digitalWrite(top,LOW);
+  digitalWrite(below, HIGH);
+  digitalWrite(top, LOW);
   scanDevices();
 
 
-  #define MPU9250_ADDRESS 0x68
-  digitalWrite(below,HIGH);
-  digitalWrite(top,LOW);
+#define MPU9250_ADDRESS 0x68
+  digitalWrite(below, HIGH);
+  digitalWrite(top, LOW);
   Serial.println("__________________TOP______________");
   Serial.println(MPU9250_ADDRESS);
   // Read the WHO_AM_I register, this is a good test of communication
@@ -193,9 +194,9 @@ void setup()
   }
 
   Serial.println("__________________END-TOP______________");
-  #define MPU9250_ADDRESS 0x68
-  digitalWrite(top,HIGH);
-  digitalWrite(below,LOW);
+#define MPU9250_ADDRESS 0x68
+  digitalWrite(top, HIGH);
+  digitalWrite(below, LOW);
   Serial.println("__________________BELOW______________");
   // Read the WHO_AM_I register, this is a good test of communication
   byte e = myTopIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
@@ -259,34 +260,37 @@ void setup()
   }
   Serial.println("__________________END-BELOW______________");
 }
-
+String reading = "";
 void loop()
 {
+  reading = "";
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt
-  #define MPU9250_ADDRESS 0x68
-  digitalWrite(below,HIGH);
-  digitalWrite(top,LOW);
+  int freq = millis();
+#define MPU9250_ADDRESS 0x68
+  digitalWrite(below, HIGH);
+  digitalWrite(top, LOW);
   Serial.println("__________________TOP______________");
-  client.publish(mqtt_topic, "####");
   getReadings();
   Serial.println("__________________END-TOP______________");
-  client.publish(mqtt_topic, "####");
-  digitalWrite(top,HIGH);
-  digitalWrite(below,LOW);
+  digitalWrite(top, HIGH);
+  digitalWrite(below, LOW);
   Serial.println("__________________BELOW______________");
-  client.publish(mqtt_topic, "***");
   getReadings();
   Serial.println("__________________END-BELOW______________");
-  client.publish(mqtt_topic, "***");
+  client.publish(mqtt_topic, reading.c_str(), true);
+  freq = millis() - freq;
+  Serial.print("rate = ");
+  Serial.print((float)1000 / freq, 3);
+  Serial.println(" Hz");
 }
 
-void getReadings(){
-  char time_now[30];
-  int time_stamp=millis();
-  dtostrf(time_stamp, 10, 3, time_now);
-  client.publish(mqtt_topic, time_now);
+void getReadings() {
+  int time_stamp = millis();
+  client.publish(mqtt_topic, String(time_stamp).c_str(), true);
   Serial.println(time_stamp);
+
+
   if (myTopIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {
     myTopIMU.readAccelData(myTopIMU.accelCount);  // Read the x/y/z adc values
@@ -347,180 +351,163 @@ void getReadings(){
 
   if (!AHRS)
   {
-    myTopIMU.delt_t = millis() - myTopIMU.count;
-      if (SerialDebug)
-      {
-        //client.publish(mqtt_topic, "Transmission started!")
-        // Print acceleration values in milligs!
-        char x_value[10];
-        char y_value[10];
-        char z_value[10];
-        dtostrf(1000 * myTopIMU.ax, 4, 3, x_value);
-        client.publish(mqtt_topic, "TOP:X-acceleration: "); client.publish(mqtt_topic, x_value);
-        //client.publish(mqtt_topic, " mg ");
-        dtostrf(1000 * myTopIMU.ay, 4, 3, y_value);
-        client.publish(mqtt_topic, "TOP:Y-acceleration: "); client.publish(mqtt_topic, y_value);
-        //client.publish(mqtt_topic, " mg ");
-        dtostrf(1000 * myTopIMU.az, 4, 3, z_value);
-        client.publish(mqtt_topic, "TOP:Z-acceleration: "); client.publish(mqtt_topic, z_value);
-        //client.publish(mqtt_topic, " mg ");
+    if (SerialDebug)
+    {
+      //client.publish(mqtt_topic, "Transmission started!")
+      // Print acceleration values in milligs!
+      char x_value[10];
+      char y_value[10];
+      char z_value[10];
+      dtostrf(1000 * myTopIMU.ax, 4, 3, x_value);
+      client.publish(mqtt_topic, "TOP:X-acceleration: "); client.publish(mqtt_topic, x_value);
+      //client.publish(mqtt_topic, " mg ");
+      dtostrf(1000 * myTopIMU.ay, 4, 3, y_value);
+      client.publish(mqtt_topic, "TOP:Y-acceleration: "); client.publish(mqtt_topic, y_value);
+      //client.publish(mqtt_topic, " mg ");
+      dtostrf(1000 * myTopIMU.az, 4, 3, z_value);
+      client.publish(mqtt_topic, "TOP:Z-acceleration: "); client.publish(mqtt_topic, z_value);
+      //client.publish(mqtt_topic, " mg ");
 
-        Serial.print("X-acceleration: "); Serial.print(1000 * myTopIMU.ax);
-        Serial.print(" mg ");
-        Serial.print("Y-acceleration: "); Serial.print(1000 * myTopIMU.ay);
-        Serial.print(" mg ");
-        Serial.print("Z-acceleration: "); Serial.print(1000 * myTopIMU.az);
-        Serial.println(" mg ");
+      Serial.print("X-acceleration: "); Serial.print(1000 * myTopIMU.ax);
+      Serial.print(" mg ");
+      Serial.print("Y-acceleration: "); Serial.print(1000 * myTopIMU.ay);
+      Serial.print(" mg ");
+      Serial.print("Z-acceleration: "); Serial.print(1000 * myTopIMU.az);
+      Serial.println(" mg ");
 
-        // Print gyro values in degree/sec
-        dtostrf(1000 * myTopIMU.gx, 4, 3, x_value);
-        client.publish(mqtt_topic, "TOP:X-gyro rate:: "); client.publish(mqtt_topic, x_value);
-        //client.publish(mqtt_topic, " degrees/sec ");
-        dtostrf(1000 * myTopIMU.gy, 4, 3, y_value);
-        client.publish(mqtt_topic, "TOP:Y-gyro rate:: "); client.publish(mqtt_topic, y_value);
-        //client.publish(mqtt_topic, " degrees/sec ");
-        dtostrf(1000 * myTopIMU.gz, 4, 3, z_value);
-        client.publish(mqtt_topic, "TOP:Z-gyro rate:: "); client.publish(mqtt_topic, z_value);
-        //client.publish(mqtt_topic, " degrees/sec ");
+      // Print gyro values in degree/sec
+      dtostrf(1000 * myTopIMU.gx, 4, 3, x_value);
+      client.publish(mqtt_topic, "TOP:X-gyro rate:: "); client.publish(mqtt_topic, x_value);
+      //client.publish(mqtt_topic, " degrees/sec ");
+      dtostrf(1000 * myTopIMU.gy, 4, 3, y_value);
+      client.publish(mqtt_topic, "TOP:Y-gyro rate:: "); client.publish(mqtt_topic, y_value);
+      //client.publish(mqtt_topic, " degrees/sec ");
+      dtostrf(1000 * myTopIMU.gz, 4, 3, z_value);
+      client.publish(mqtt_topic, "TOP:Z-gyro rate:: "); client.publish(mqtt_topic, z_value);
+      //client.publish(mqtt_topic, " degrees/sec ");
 
-        Serial.print("X-gyro rate: "); Serial.print(myTopIMU.gx, 3);
-        Serial.print(" degrees/sec ");
-        Serial.print("Y-gyro rate: "); Serial.print(myTopIMU.gy, 3);
-        Serial.print(" degrees/sec ");
-        Serial.print("Z-gyro rate: "); Serial.print(myTopIMU.gz, 3);
-        Serial.println(" degrees/sec");
+      Serial.print("X-gyro rate: "); Serial.print(myTopIMU.gx, 3);
+      Serial.print(" degrees/sec ");
+      Serial.print("Y-gyro rate: "); Serial.print(myTopIMU.gy, 3);
+      Serial.print(" degrees/sec ");
+      Serial.print("Z-gyro rate: "); Serial.print(myTopIMU.gz, 3);
+      Serial.println(" degrees/sec");
 
-        // Print mag values in degree/sec
-        Serial.print("X-mag field: "); Serial.print(myTopIMU.mx);
-        Serial.print(" mG ");
-        Serial.print("Y-mag field: "); Serial.print(myTopIMU.my);
-        Serial.print(" mG ");
-        Serial.print("Z-mag field: "); Serial.print(myTopIMU.mz);
-        Serial.println(" mG");
+      // Print mag values in degree/sec
+      Serial.print("X-mag field: "); Serial.print(myTopIMU.mx);
+      Serial.print(" mG ");
+      Serial.print("Y-mag field: "); Serial.print(myTopIMU.my);
+      Serial.print(" mG ");
+      Serial.print("Z-mag field: "); Serial.print(myTopIMU.mz);
+      Serial.println(" mG");
 
-        myTopIMU.tempCount = myTopIMU.readTempData();  // Read the adc values
-        // Temperature in degrees Centigrade
-        myTopIMU.temperature = ((float) myTopIMU.tempCount) / 333.87 + 21.0;
-        dtostrf(myTopIMU.temperature, 4, 3, x_value);
-        // Print temperature in degrees Centigrade
-        client.publish(mqtt_topic, "TOP:Temperature is "); client.publish(mqtt_topic, x_value);
-        Serial.print("Temperature is ");  Serial.print(myTopIMU.temperature, 1);
-        Serial.println(" degrees C");
-      }
+      myTopIMU.tempCount = myTopIMU.readTempData();  // Read the adc values
+      // Temperature in degrees Centigrade
+      myTopIMU.temperature = ((float) myTopIMU.tempCount) / 333.87 + 21.0;
+      dtostrf(myTopIMU.temperature, 4, 3, x_value);
+      // Print temperature in degrees Centigrade
+      client.publish(mqtt_topic, "TOP:Temperature is "); client.publish(mqtt_topic, x_value);
+      Serial.print("Temperature is ");  Serial.print(myTopIMU.temperature, 1);
+      Serial.println(" degrees C");
+    }
 
-      myTopIMU.count = millis();
   } // if (!AHRS)
   else
   {
-    char x_value[10];
-    char y_value[10];
-    char z_value[10];
     myTopIMU.delt_t = millis() - myTopIMU.count;
+    if (SerialDebug)
+    {
 
-      if (SerialDebug)
-      {
-        
-        dtostrf((int)1000 * myTopIMU.ax, 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.print("ax = "); Serial.print((int)1000 * myTopIMU.ax);
-        dtostrf((int)1000 * myTopIMU.ay, 4, 3, y_value);
-        client.publish(mqtt_topic, y_value);
-        Serial.print(" ay = "); Serial.print((int)1000 * myTopIMU.ay);
-        dtostrf((int)1000 * myTopIMU.az, 4, 3, z_value);
-        client.publish(mqtt_topic, z_value);
-        Serial.print(" az = "); Serial.print((int)1000 * myTopIMU.az);
-        Serial.println(" mg");
+      reading = String((int)1000 * myTopIMU.ax);
 
-        dtostrf((int)1000 * myTopIMU.gx, 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.print("gx = "); Serial.print( myTopIMU.gx, 2);
-        dtostrf((int)1000 * myTopIMU.gy, 4, 3, y_value);
-        client.publish(mqtt_topic, y_value);
-        Serial.print(" gy = "); Serial.print( myTopIMU.gy, 2);
-        dtostrf((int)1000 * myTopIMU.gz, 4, 3, z_value);
-        client.publish(mqtt_topic, z_value);
-        Serial.print(" gz = "); Serial.print( myTopIMU.gz, 2);
-        Serial.println(" deg/s");
+      client.publish(mqtt_topic, String((int)1000 * myTopIMU.ax).c_str(), true);
+      Serial.print("ax = "); Serial.print((int)1000 * myTopIMU.ax);
+      client.publish(mqtt_topic, String((int)1000 * myTopIMU.ay).c_str(), true);
+      Serial.print(" ay = "); Serial.print((int)1000 * myTopIMU.ay);
+      client.publish(mqtt_topic, String((int)1000 * myTopIMU.az).c_str(), true);
+      Serial.print(" az = "); Serial.print((int)1000 * myTopIMU.az);
+      Serial.println(" mg");
 
-        dtostrf((int)1000 * myTopIMU.mx, 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.print("mx = "); Serial.print( (int)myTopIMU.mx );
-        dtostrf((int)1000 * myTopIMU.my, 4, 3, y_value);
-        client.publish(mqtt_topic, y_value);
-        Serial.print(" my = "); Serial.print( (int)myTopIMU.my );
-        dtostrf((int)1000 * myTopIMU.mz, 4, 3, z_value);
-        client.publish(mqtt_topic, z_value);
-        Serial.print(" mz = "); Serial.print( (int)myTopIMU.mz );
-        Serial.println(" mG");
+      client.publish(mqtt_topic, String((int)1000 * myTopIMU.gx).c_str(), true);
+      Serial.print("gx = "); Serial.print( myTopIMU.gx, 2);
+      client.publish(mqtt_topic, String((int)1000 * myTopIMU.gy).c_str(), true);
+      Serial.print(" gy = "); Serial.print( myTopIMU.gy, 2);
+      client.publish(mqtt_topic, String((int)1000 * myTopIMU.gz).c_str(), true);
+      Serial.print(" gz = "); Serial.print( myTopIMU.gz, 2);
+      Serial.println(" deg/s");
 
-        dtostrf(*getQ(), 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.print("q0 = "); Serial.print(*getQ());
-        dtostrf(*(getQ() + 1), 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.print(" qx = "); Serial.print(*(getQ() + 1));
-        dtostrf(*(getQ() + 2), 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.print(" qy = "); Serial.print(*(getQ() + 2));
-        dtostrf(*(getQ() + 3), 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.print(" qz = "); Serial.println(*(getQ() + 3));
-      }
+      client.publish(mqtt_topic, String((int)1000 * myTopIMU.mx).c_str(), true);
+      Serial.print("mx = "); Serial.print( (int)myTopIMU.mx );
+      client.publish(mqtt_topic, String((int)1000 * myTopIMU.my).c_str(), true);
+      Serial.print(" my = "); Serial.print( (int)myTopIMU.my );
+      client.publish(mqtt_topic, String((int)1000 * myTopIMU.mz).c_str(), true);
+      Serial.print(" mz = "); Serial.print( (int)myTopIMU.mz );
+      Serial.println(" mG");
 
-      // Define output variables from updated quaternion---these are Tait-Bryan
-      // angles, commonly used in aircraft orientation. In this coordinate system,
-      // the positive z-axis is down toward Earth. Yaw is the angle between Sensor
-      // x-axis and Earth magnetic North (or true North if corrected for local
-      // declination, looking down on the sensor positive yaw is counterclockwise.
-      // Pitch is angle between sensor x-axis and Earth ground plane, toward the
-      // Earth is positive, up toward the sky is negative. Roll is angle between
-      // sensor y-axis and Earth ground plane, y-axis up is positive roll. These
-      // arise from the definition of the homogeneous rotation matrix constructed
-      // from quaternions. Tait-Bryan angles as well as Euler angles are
-      // non-commutative; that is, the get the correct orientation the rotations
-      // must be applied in the correct order which for this configuration is yaw,
-      // pitch, and then roll.
-      // For more see
-      // http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-      // which has additional links.
-      myTopIMU.yaw   = atan2(2.0f * (*(getQ() + 1) * *(getQ() + 2) + *getQ() *
-                                     *(getQ() + 3)), *getQ() * *getQ() + * (getQ() + 1) * *(getQ() + 1)
-                             - * (getQ() + 2) * *(getQ() + 2) - * (getQ() + 3) * *(getQ() + 3));
-      myTopIMU.pitch = -asin(2.0f * (*(getQ() + 1) * *(getQ() + 3) - *getQ() *
-                                     *(getQ() + 2)));
-      myTopIMU.roll  = atan2(2.0f * (*getQ() * *(getQ() + 1) + * (getQ() + 2) *
-                                     *(getQ() + 3)), *getQ() * *getQ() - * (getQ() + 1) * *(getQ() + 1)
-                             - * (getQ() + 2) * *(getQ() + 2) + * (getQ() + 3) * *(getQ() + 3));
-      myTopIMU.pitch *= RAD_TO_DEG;
-      myTopIMU.yaw   *= RAD_TO_DEG;
-      // Declination of NUS, Singapore
-      // - http://www.ngdc.noaa.gov/geomag-web/#declination
-      myTopIMU.yaw   += 0.2;
-      myTopIMU.roll  *= RAD_TO_DEG;
+      client.publish(mqtt_topic, String(*getQ()).c_str(), true);
+      Serial.print("q0 = "); Serial.print(*getQ());
+      client.publish(mqtt_topic, String(*(getQ() + 1)).c_str(), true);
+      Serial.print(" qx = "); Serial.print(*(getQ() + 1));
+      client.publish(mqtt_topic, String(*(getQ() + 2)).c_str(), true);
+      Serial.print(" qy = "); Serial.print(*(getQ() + 2));
+      client.publish(mqtt_topic, String(*(getQ() + 3)).c_str(), true);
+      Serial.print(" qz = "); Serial.println(*(getQ() + 3));
+    }
 
-      if (SerialDebug)
-      {
-        Serial.print("Yaw, Pitch, Roll: ");
-        dtostrf(myTopIMU.yaw, 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.print(myTopIMU.yaw, 2);
-        Serial.print(", ");
-        dtostrf(myTopIMU.pitch, 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.print(myTopIMU.pitch, 2);
-        Serial.print(", ");
-        dtostrf(myTopIMU.roll, 4, 3, x_value);
-        client.publish(mqtt_topic, x_value);
-        Serial.println(myTopIMU.roll, 2);
+    // Define output variables from updated quaternion---these are Tait-Bryan
+    // angles, commonly used in aircraft orientation. In this coordinate system,
+    // the positive z-axis is down toward Earth. Yaw is the angle between Sensor
+    // x-axis and Earth magnetic North (or true North if corrected for local
+    // declination, looking down on the sensor positive yaw is counterclockwise.
+    // Pitch is angle between sensor x-axis and Earth ground plane, toward the
+    // Earth is positive, up toward the sky is negative. Roll is angle between
+    // sensor y-axis and Earth ground plane, y-axis up is positive roll. These
+    // arise from the definition of the homogeneous rotation matrix constructed
+    // from quaternions. Tait-Bryan angles as well as Euler angles are
+    // non-commutative; that is, the get the correct orientation the rotations
+    // must be applied in the correct order which for this configuration is yaw,
+    // pitch, and then roll.
+    // For more see
+    // http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+    // which has additional links.
+    myTopIMU.yaw   = atan2(2.0f * (*(getQ() + 1) * *(getQ() + 2) + *getQ() *
+                                   *(getQ() + 3)), *getQ() * *getQ() + * (getQ() + 1) * *(getQ() + 1)
+                           - * (getQ() + 2) * *(getQ() + 2) - * (getQ() + 3) * *(getQ() + 3));
+    myTopIMU.pitch = -asin(2.0f * (*(getQ() + 1) * *(getQ() + 3) - *getQ() *
+                                   *(getQ() + 2)));
+    myTopIMU.roll  = atan2(2.0f * (*getQ() * *(getQ() + 1) + * (getQ() + 2) *
+                                   *(getQ() + 3)), *getQ() * *getQ() - * (getQ() + 1) * *(getQ() + 1)
+                           - * (getQ() + 2) * *(getQ() + 2) + * (getQ() + 3) * *(getQ() + 3));
+    myTopIMU.pitch *= RAD_TO_DEG;
+    myTopIMU.yaw   *= RAD_TO_DEG;
+    // Declination of NUS, Singapore
+    // - http://www.ngdc.noaa.gov/geomag-web/#declination
+    myTopIMU.yaw   += 0.2;
+    myTopIMU.roll  *= RAD_TO_DEG;
 
-        Serial.print("rate = ");
-        Serial.print((float)myTopIMU.sumCount / myTopIMU.sum, 2);
-        Serial.println(" Hz");
-      }
+    if (SerialDebug)
+    {
+      Serial.print("Yaw, Pitch, Roll: ");
+      client.publish(mqtt_topic, String(myTopIMU.yaw).c_str(), true);
+      Serial.print(myTopIMU.yaw, 2);
+      Serial.print(", ");
+      client.publish(mqtt_topic, String(myTopIMU.pitch).c_str(), true);
+      Serial.print(myTopIMU.pitch, 2);
+      Serial.print(", ");
+      client.publish(mqtt_topic, String(myTopIMU.roll).c_str(), true);
+      Serial.println(myTopIMU.roll, 2);
 
-      myTopIMU.count = millis();
-      myTopIMU.sumCount = 0;
-      myTopIMU.sum = 0;
+      myTopIMU.tempCount = myTopIMU.readTempData();  // Read the adc values
+      // Temperature in degrees Centigrade
+      myTopIMU.temperature = ((float) myTopIMU.tempCount) / 333.87 + 21.0;
+      client.publish(mqtt_topic, String(myTopIMU.temperature).c_str(), true);
+      Serial.print("Temperature is ");  Serial.print(myTopIMU.temperature, 1);
+      Serial.println(" degrees C");
+    }
+    myTopIMU.count = millis();
+    myTopIMU.sumCount = 0;
+    myTopIMU.sum = 0;
+
   } // if (AHRS)
 
 }
