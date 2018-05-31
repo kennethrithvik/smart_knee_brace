@@ -1,99 +1,47 @@
 #!python3
-###demo code provided by Steve Cope at www.steves-internet-guide.com
-##email steve@steves-internet-guide.com
-###Free to use for any purpose
 
-"""
-This will log messages to file.Los time,message and topic as JSON data
-"""
+
 import paho.mqtt.client as mqtt
 import json
 import os
 import time
 import sys, getopt,random
 import logging
-#import mlogger as mlogger
 from sql_logger import SQL_data_logger
 import threading
 from queue import Queue
+
 q=Queue()
 
 ##### User configurable data section
 username="knee_brace"
 password="knee_brace"
-verbose=True #True to display all messages, False to display only changed messages
-mqttclient_log=False #MQTT client logs showing messages
 logging.basicConfig(level=logging.INFO) #error logging
-#use DEBUG,INFO,WARNING
 ####
+
 options=dict()
 ##EDIT HERE ###############
-brokers=["192.168.1.24","192.168.1.3","192.168.1.5","192.168.1.190"]
-options["broker"]=brokers[1]
+brokers=["192.168.1.24","192.168.1.3","192.168.1.5","192.168.1.190","192.168.1.4"]
+options["broker"]=brokers[4]
 options["port"]=1883
-options["verbose"]=True
 options["cname"]=""
 options["topics"]=[("knee_brace_nodemcu/#",0)]
+options["action"] = "Standing"
+options["keepalive"]=60
 
-#sql
-db_file="sensor.db"
-Table_name="sensor"
-table_fields={
-    "id":"integer primary key autoincrement",
-    "timestamp": "text",
-    "top_accel_x": "text",
-    "top_accel_y": "text",
-    "top_accel_z": "text",
-    "top_mag_x": "text",
-    "top_mag_y": "text",
-    "top_mag_z": "text",
-    "top_gy_x": "text",
-    "top_gy_y": "text",
-    "top_gy_z": "text",
-    "top_q0": "text",
-    "top_qx": "text",
-    "top_qy": "text",
-    "top_qz": "text",
-    "top_yaw": "text",
-    "top_pitch": "text",
-    "top_roll": "text",
-    "top_temperature": "text",
-    "bottom_accel_x": "text",
-    "bottom_accel_y": "text",
-    "bottom_accel_z": "text",
-    "bottom_mag_x": "text",
-    "bottom_mag_y": "text",
-    "bottom_mag_z": "text",
-    "bottom_gy_x": "text",
-    "bottom_gy_y": "text",
-    "bottom_gy_z": "text",
-    "bottom_q0": "text",
-    "bottom_qx": "text",
-    "bottom_qy": "text",
-    "bottom_qz": "text",
-    "bottom_yaw": "text",
-    "bottom_pitch": "text",
-    "bottom_roll": "text",
-    "bottom_temperature": "text",
-    }
-###
 cname=""
-sub_flag=""
-timeout=60
-messages=dict()
-last_message=dict()
 ######
+
 def command_input(options={}):
     topics_in=[]
     qos_in=[]
 
-    valid_options=" -b <broker> -p <port>-t <topic> -q QOS -v <verbose> -h <help>\
+    valid_options=" -b <broker> -p <port>-t <topic> -q QOS -h <help>\
     -c <loop Time secs -d logging debug  -n Client ID or Name\
-    -i loop Interval -u Username -P Password\
+    -i loop Interval -u Username -P Password -a Action\
     "
-    print_options_flag=False
     try:
-      opts, args = getopt.getopt(sys.argv[1:],"hb:i:dk:p:t:q:l:vn:u:P:")
+      opts, args = getopt.getopt(sys.argv[1:],"hb:i:dk:p:t:q:l:n:u:P:a:")
     except getopt.GetoptError:
       print (sys.argv[0],valid_options)
       sys.exit(2)
@@ -123,8 +71,8 @@ def command_input(options={}):
              options["password"] = str(arg)
         elif opt == "-u":
              options["username"] = str(arg)        
-        elif opt =="-v":
-            options["verbose"]=True
+        elif opt == "-a":
+             options["action"] = str(arg)
       
 
     lqos=len(qos_in)
@@ -164,14 +112,12 @@ def on_subscribe(client,userdata,mid,granted_qos):
     logging.debug(m)
     client.subscribed_flag=True
 
-    #print("message received")
 def message_handler(client,msg,topic):
     #data=dict()
     #data["topic"]=topic
     #data["message"]=msg
-    if verbose :
-        #print("storing changed data",topic, "   ",msg)
-        q.put(msg) #put messages on queue
+    q.put(msg) #put messages on queue
+    #print(msg)
 
 def log_worker():
     """runs in own thread to log data"""
@@ -190,10 +136,9 @@ def log_worker():
                 for i in range(35):
                     data = q.get()
                     if data == "***":
-                        q.put("***")
                         continue
-                    readings.append(data)
-                #print(readings)
+                    readings.append(float(data))
+                readings.append(options["action"])
                 
                 
             try:
@@ -204,14 +149,13 @@ def log_worker():
                 top_yaw,top_pitch,top_roll,top_temperature,bottom_accel_x,bottom_accel_y,\
                 bottom_accel_z,bottom_mag_x,bottom_mag_y,bottom_mag_z,bottom_gy_x,bottom_gy_y,\
                 bottom_gy_z,bottom_q0,bottom_qx,bottom_qy,bottom_qz,bottom_yaw,bottom_pitch,\
-                bottom_roll,bottom_temperature)\
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"   
+                bottom_roll,bottom_temperature,action)\
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"   
                 logger.Log_sensor(data_query,data_out)
             except Exception as e:
                 print("problem with logging ",e)
     logger.conn.close()
 
-            #print("message saved ",results["message"])
 
 
 ########################
@@ -221,8 +165,6 @@ def log_worker():
 def Initialise_clients(cname,cleansession=True):
     #flags set
     client= mqtt.Client(cname)
-    if mqttclient_log: #enable mqqt client logging
-        client.on_log=on_log
     client.on_connect= on_connect        #attach function to callback
     client.on_message=on_message        #attach function to callback
     client.on_disconnect=on_disconnect
@@ -231,39 +173,71 @@ def Initialise_clients(cname,cleansession=True):
 ###
 
 
-
-###########
-def convert(t):
-    d=""
-    for c in t:  # replace all chars outside BMP with a !
-            d =d+(c if ord(c) < 0x10000 else '!')
-    return(d)
-def print_out(m):
-    if display:
-        print(m)
-
-    
-########################main program
+########################  main program
 if __name__ == "__main__" and len(sys.argv)>=2:
     command_input(options)
     pass
-verbose=options["verbose"]
+    print()
 
 if not options["cname"]:
     r=random.randrange(1,10000)
     cname="logger-"+str(r)
 else:
     cname="logger-"+str(options["cname"])
-       
+
+#sql
+db_file="sensor.db"
+Table_name=options["action"]
+table_fields={
+    "id":"integer primary key autoincrement",
+    "timestamp": "real",
+    "top_accel_x": "real",
+    "top_accel_y": "real",
+    "top_accel_z": "real",
+    "top_mag_x": "real",
+    "top_mag_y": "real",
+    "top_mag_z": "real",
+    "top_gy_x": "real",
+    "top_gy_y": "real",
+    "top_gy_z": "real",
+    "top_q0": "real",
+    "top_qx": "real",
+    "top_qy": "real",
+    "top_qz": "real",
+    "top_yaw": "real",
+    "top_pitch": "real",
+    "top_roll": "real",
+    "top_temperature": "real",
+    "bottom_accel_x": "real",
+    "bottom_accel_y": "real",
+    "bottom_accel_z": "real",
+    "bottom_mag_x": "real",
+    "bottom_mag_y": "real",
+    "bottom_mag_z": "real",
+    "bottom_gy_x": "real",
+    "bottom_gy_y": "real",
+    "bottom_gy_z": "real",
+    "bottom_q0": "real",
+    "bottom_qx": "real",
+    "bottom_qy": "real",
+    "bottom_qz": "real",
+    "bottom_yaw": "real",
+    "bottom_pitch": "real",
+    "bottom_roll": "real",
+    "bottom_temperature": "real",
+    "action":"text"
+    }
+###
+
 #Initialise_client_object() # add extra flags
 logging.info("creating client"+cname)
 client=Initialise_clients(cname,False)#create and initialise client object
-if username !="":
+if username and password !="":
     client.username_pw_set(username, password)
 topics=options["topics"]
 broker=options["broker"]
-port=1883
-keepalive=60
+port=options["port"]
+keepalive=options["keepalive"]
 print("starting")
 
 ##
