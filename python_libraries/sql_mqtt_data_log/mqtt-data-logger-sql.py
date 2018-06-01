@@ -16,7 +16,7 @@ q=Queue()
 ##### User configurable data section
 username="knee_brace"
 password="knee_brace"
-logging.basicConfig(level=logging.INFO) #error logging
+logging.basicConfig(format='%(asctime)-15s [%(name)s-%(process)d] %(levelname)s: %(message)s', level=logging.INFO) #error logging
 ####
 
 options=dict()
@@ -27,7 +27,6 @@ options["port"]=1883
 options["cname"]=""
 options["topics"]=[("knee_brace_nodemcu/#",0)]
 options["action"] = "Standing"
-options["keepalive"]=60
 
 cname=""
 ######
@@ -37,15 +36,14 @@ def command_input(options={}):
     qos_in=[]
 
     valid_options=" -b <broker> -p <port>-t <topic> -q QOS -h <help>\
-    -c <loop Time secs -d logging debug  -n Client ID or Name\
-    -i loop Interval -u Username -P Password -a Action\
+     -n Client ID or Name\
+    -u Username -P Password -a Action\
     "
     try:
-      opts, args = getopt.getopt(sys.argv[1:],"hb:i:dk:p:t:q:l:n:u:P:a:")
+      opts, args = getopt.getopt(sys.argv[1:],"hb:p:t:q:l:n:u:P:a:")
     except getopt.GetoptError:
       print (sys.argv[0],valid_options)
       sys.exit(2)
-    qos=0
 
     for opt, arg in opts:
         if opt == '-h':
@@ -53,10 +51,6 @@ def command_input(options={}):
             sys.exit()
         elif opt == "-b":
              options["broker"] = str(arg)
-        elif opt == "-i":
-             options["interval"] = int(arg)
-        elif opt == "-k":
-             options["keepalive"] = int(arg)
         elif opt =="-p":
             options["port"] = int(arg)
         elif opt =="-t":
@@ -65,8 +59,6 @@ def command_input(options={}):
              qos_in.append(int(arg))
         elif opt =="-n":
              options["cname"]=arg
-        elif opt =="-d":
-            options["loglevel"]="DEBUG"
         elif opt == "-P":
              options["password"] = str(arg)
         elif opt == "-u":
@@ -128,6 +120,8 @@ def log_worker():
     readings=[]
     while Log_worker_flag:
         while not q.empty():
+            logging.info("logging data")
+            cont=False
             data = q.get()
             if data is None:
                 continue
@@ -136,10 +130,13 @@ def log_worker():
                 for i in range(35):
                     data = q.get()
                     if data == "***":
-                        continue
+                        cont=True
+                        break
                     readings.append(float(data))
                 readings.append(options["action"])
-                
+                if cont:
+                    print('error in receiving')
+                    continue
                 
             try:
                 data_out=readings
@@ -237,14 +234,9 @@ if username and password !="":
 topics=options["topics"]
 broker=options["broker"]
 port=options["port"]
-keepalive=options["keepalive"]
 print("starting")
 
-##
-t = threading.Thread(target=log_worker) #start logger
-Log_worker_flag=True
-t.start() #start logging thread
-###
+
 client.connected_flag=False # flag for connection
 client.bad_connection_flag=False
 client.subscribed_flag=False
@@ -257,6 +249,11 @@ while not client.subscribed_flag: #wait for connection
     time.sleep(1)
     print("waiting for subscribe")
 print("subscribed ",topics)
+##
+Log_worker_flag=True
+t = threading.Thread(target=log_worker) #start logger
+t.start() #start logging thread
+###
 #loop and wait until interrupted
 try:
     while True:
@@ -267,6 +264,8 @@ except KeyboardInterrupt:
 
 client.loop_stop()  #final check for messages
 time.sleep(5)
+while not q.empty():
+    pass
 Log_worker_flag=False #stop logging thread
 print("ending ")
 
