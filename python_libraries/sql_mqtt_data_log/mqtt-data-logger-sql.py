@@ -21,8 +21,8 @@ logging.basicConfig(format='%(asctime)-15s [%(name)s-%(process)d] %(levelname)s:
 
 options=dict()
 ##EDIT HERE ###############
-brokers=["192.168.1.24","192.168.1.3","192.168.1.5","192.168.1.190","192.168.1.4"]
-options["broker"]=brokers[4]
+brokers=["192.168.1.190","192.168.1.3","192.168.1.5","192.168.1.190","192.168.1.4","192.168.18.179"]
+options["broker"]=brokers[0]
 options["port"]=1883
 options["cname"]=""
 options["topics"]=[("knee_brace_nodemcu/#",0)]

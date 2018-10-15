@@ -20,8 +20,9 @@ const char* ssid = "knee_brace";
 const char* wifi_password = "knee_brace";
 // MQTT
 // Make sure to update this for your own MQTT Broker!
-const char* mqtt_server = "192.168.1.4";
+const char* mqtt_server = "192.168.1.190";
 const char* mqtt_topic = "knee_brace_nodemcu";
+const char* mqtt_topic_yaw = "knee_brace_nodemcu//yaw";
 const char* mqtt_username = "knee_brace";
 const char* mqtt_password = "knee_brace";
 // The client id identifies the ESP8266 device. Think of it a bit like a hostname (Or just a name, like Greg).
@@ -509,7 +510,7 @@ void getReadings() {
       //reading=reading+String("yaw,")+String(myTopIMU.yaw)+String(",");
       Serial.print(myTopIMU.yaw, 2);
       Serial.print(", ");
-      client.publish(mqtt_topic, String(myTopIMU.pitch).c_str(), true);
+      client.publish(mqtt_topic_yaw, String(myTopIMU.pitch).c_str(), true);
       //reading=reading+String("pitch,")+String(myTopIMU.pitch)+String(",");
       Serial.print(myTopIMU.pitch, 2);
       Serial.print(", ");
