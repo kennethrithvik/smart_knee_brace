@@ -1,26 +1,20 @@
-
-# coding: utf-8
-
 # In[1]:
-
 
 import sqlite3
 import pandas as pd
 # Create your connection.
 cnx = sqlite3.connect('../sql_mqtt_data_log/sensor.db')
-
+cursor=cnx.cursor()
+tables=cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
 df_walking = pd.read_sql_query("SELECT * FROM ction", cnx)
-#df_standing = pd.read_sql_query("SELECT * FROM standing", cnx)
+
 #df_complete=pd.concat([df_walking,df_standing],axis=0)
 
 
 # In[3]:
 
-
-#print(df_walking.head())
-#print(df_standing.head())
 df_walking
-
+tables[0][0]
 
 # In[95]:
 
