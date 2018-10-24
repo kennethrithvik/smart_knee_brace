@@ -1,20 +1,23 @@
-# In[1]:
-
 import sqlite3
 import pandas as pd
+import numpy as np
+
+# In[2]:
+
 # Create your connection.
 cnx = sqlite3.connect('../sql_mqtt_data_log/sensor.db')
 cursor=cnx.cursor()
 tables=cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
-df_walking = pd.read_sql_query("SELECT * FROM ction", cnx)
+tables[2][0]
+df = pd.read_sql_query("SELECT * FROM ction", cnx)
 
 #df_complete=pd.concat([df_walking,df_standing],axis=0)
-
+df=df.drop(['id','top_temperature','bottom_temperature'],axis=1)
 
 # In[3]:
-
-df_walking
-tables[0][0]
+start=df['timestamp'][0]//1000
+df['second']=(df['timestamp']//1000)-start
+a3d = np.array(list(df.groupby('second').apply(pd.DataFrame.as_matrix)))
 
 # In[95]:
 

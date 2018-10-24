@@ -10,13 +10,16 @@ import logging
 from sql_logger import SQL_data_logger
 import threading
 from queue import Queue
+import numpy as np
+import pandas as pd
 
 q=Queue()
+list=[]
 
 ##### User configurable data section
 username="knee_brace"
 password="knee_brace"
-logging.basicConfig(format='%(asctime)-15s [%(name)s-%(process)d] %(levelname)s: %(message)s', level=logging.INFO) #error logging
+logging.basicConfig(format='%(asctime)-15s [%(name)s-%(process)d] [%(threadName)s] %(levelname)s: %(message)s', level=logging.INFO) #error logging
 ####
 
 options=dict()
@@ -81,7 +84,7 @@ def command_input(options={}):
 
 #callbacks -all others define in functions module
 def on_connect(client, userdata, flags, rc):
-    logging.debug("Connected flags"+str(flags)+"result code "\
+    logging.info("Connected flags"+str(flags)+"result code "\
     +str(rc)+"client1_id")
     if rc==0:
         client.connected_flag=True
@@ -89,7 +92,8 @@ def on_connect(client, userdata, flags, rc):
         client.bad_connection_flag=True
 
 def on_disconnect(client, userdata, rc):
-    logging.debug("disconnecting reason  " + str(rc))
+    logging.info("disconnecting reason  " + str(rc))
+    print(len(list)/35)
     client.connected_flag=False
     client.disconnect_flag=True
     client.subscribe_flag=False
@@ -109,18 +113,19 @@ def message_handler(client,msg,topic):
     #data["topic"]=topic
     #data["message"]=msg
     q.put(msg) #put messages on queue
+    list.append(msg)
     #print(msg)
 
 def log_worker():
     """runs in own thread to log data"""
     #create logger
-    logger=SQL_data_logger(db_file)
-    logger.drop_table(Table_name)
-    logger.create_table(Table_name,table_fields)
+    #logger=SQL_data_logger(db_file)
+    #logger.drop_table(Table_name)
+    #logger.create_table(Table_name,table_fields)
+    #dataset=[]
     readings=[]
     while Log_worker_flag:
         while not q.empty():
-            logging.info("logging data")
             cont=False
             data = q.get()
             if data is None:
@@ -140,6 +145,8 @@ def log_worker():
                 
             try:
                 data_out=readings
+                if len(data_out) == 36:
+                    dataset.append(data_out)
                 data_query="INSERT INTO "+ \
                 Table_name +"(timestamp,top_accel_x,top_accel_y,top_accel_z,top_mag_x,\
                 top_mag_y,top_mag_z,top_gy_x,top_gy_y,top_gy_z,top_q0,top_qx,top_qy,top_qz,\
@@ -148,10 +155,11 @@ def log_worker():
                 bottom_gy_z,bottom_q0,bottom_qx,bottom_qy,bottom_qz,bottom_yaw,bottom_pitch,\
                 bottom_roll,bottom_temperature,action)\
                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"   
-                logger.Log_sensor(data_query,data_out)
+                #logger.Log_sensor(data_query,data_out)
+                #logging.info("logging data")
             except Exception as e:
                 print("problem with logging ",e)
-    logger.conn.close()
+    #logger.conn.close()
 
 
 
@@ -183,10 +191,11 @@ else:
     cname="logger-"+str(options["cname"])
 
 #sql
+dataset=[]
 db_file="sensor.db"
 Table_name=options["action"]
 table_fields={
-    "id":"integer primary key autoincrement",
+    #"id":"integer primary key autoincrement",
     "timestamp": "real",
     "top_accel_x": "real",
     "top_accel_y": "real",
@@ -250,6 +259,7 @@ while not client.subscribed_flag: #wait for connection
     print("waiting for subscribe")
 print("subscribed ",topics)
 ##
+logging.info("starting")
 Log_worker_flag=True
 t = threading.Thread(target=log_worker) #start logger
 t.start() #start logging thread
@@ -259,13 +269,16 @@ try:
     while True:
         pass
 except KeyboardInterrupt:
-    print("interrrupted by keyboard")
+    logging.info("interrrupted by keyboard")
 
 
 client.loop_stop()  #final check for messages
-time.sleep(5)
+client.disconnect()
 while not q.empty():
-    pass
+    logging.info("q not empty... do not interrupt again")
+    q.qsize()
 Log_worker_flag=False #stop logging thread
-print("ending ")
-
+df=pd.DataFrame(dataset,columns=table_fields)
+df.to_csv(Table_name+".csv")
+logging.info("ending ")
+print(threading.enumerate())

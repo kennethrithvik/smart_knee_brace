@@ -4,13 +4,15 @@ Thomas Varnish (https://github.com/tvarnish), (https://www.instructables.com/mem
 Written for my Instructable - "How to use MQTT with the Raspberry Pi and ESP8266"
 """
 import paho.mqtt.client as mqtt
+import time
 
 # Don't forget to change the variables for the MQTT broker!
 mqtt_username = "knee_brace"
 mqtt_password = "knee_brace"
-mqtt_topic = "knee_brace_nodemcu"
+mqtt_topic = "knee_brace_nodemcu/#"
 mqtt_broker_ip = "192.168.1.190"
-
+list=[]
+dataset=[]
 client = mqtt.Client()
 # Set the username and password for the MQTT client
 client.username_pw_set(mqtt_username, mqtt_password)
@@ -31,20 +33,29 @@ def on_message(client, userdata, msg):
     # the content, the code to do this should be run in this function
     
     print (msg.payload.decode("utf-8") )
-    
+    #list.append(msg.payload.decode("utf-8"))
     # The message itself is stored in the msg variable
     # and details about who sent it are stored in userdata
+
+def on_disconnect(client, userdata, rc):
+    print(len(list))
+
 
 # Here, we are telling the client which functions are to be run
 # on connecting, and on receiving a message
 client.on_connect = on_connect
 client.on_message = on_message
+client.on_disconnect= on_disconnect
+
+
 
 # Once everything has been set up, we can (finally) connect to the broker
 # 1883 is the listener port that the MQTT broker is using
 client.connect(mqtt_broker_ip, 1883)
 
 # Once we have told the client to connect, let the client object run itself
+#client.loop_start()
+#time.sleep(10)
 client.loop_forever()
 client.disconnect()
 
