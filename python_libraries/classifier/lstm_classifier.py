@@ -5,14 +5,10 @@ import numpy as np
 # In[2]:
 
 # Create your connection.
-cnx = sqlite3.connect('../sql_mqtt_data_log/sensor.db')
-cursor=cnx.cursor()
-tables=cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
-tables[2][0]
-df = pd.read_sql_query("SELECT * FROM ction", cnx)
 
+df = pd.read_csv("./../dataframe_logger/male2_walking.csv")
 #df_complete=pd.concat([df_walking,df_standing],axis=0)
-df=df.drop(['id','top_temperature','bottom_temperature'],axis=1)
+df=df.drop(['top_temperature','bottom_temperature'],axis=1)
 
 # In[3]:
 start=df['timestamp'][0]//1000
