@@ -9,6 +9,9 @@ from keras.utils import np_utils
 #prepare data
 
 data_path="../../data/"
+output_model_dir="./output_models/"
+scale_file_name=output_model_dir+"scaler.dat"
+label_encoder_filename=output_model_dir+"label_en.dat"
 window_size=18
 num_sensors=32
 window_array=np.empty((0, window_size, num_sensors))
@@ -64,8 +67,8 @@ y_train_hot = np_utils.to_categorical(y_train, num_classes)
 print('New y_train shape: ', y_train_hot.shape)
 
 ## save the scales and label encoder
-joblib.dump(scaler, "./output_models/scaler.dat")
-joblib.dump(le, "./output_models/label_en.dat")
+joblib.dump(scaler, scale_file_name)
+joblib.dump(le, label_encoder_filename)
 
 # In[1]:
 # Set input & output dimensions
@@ -115,7 +118,7 @@ tensorboard=TensorBoard(log_dir='./logs/', histogram_freq=0,
                          batch_size=32, write_graph=True,
                          write_grads=True, write_images=True)
 
-checkpointer = ModelCheckpoint(filepath='./output_models/Model{epoch:02d}_{val_acc:.2f}.h5',
+checkpointer = ModelCheckpoint(filepath=output_model_dir+'Model{epoch:02d}_{val_acc:.2f}.h5',
                                verbose=1, save_best_only=True)
 
 early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.0001,
@@ -152,10 +155,9 @@ plt.show()
 
 # In[1]:
 from sklearn import metrics
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import classification_report
 from keras.models import load_model
 ## test on test data
-classifier = load_model('./output_models/Model44_0.91.h5')
 
 def show_confusion_matrix(validations, predictions):
 
@@ -177,8 +179,8 @@ def show_confusion_matrix(validations, predictions):
 # In[1]:
 
 ##prepare test data
-scaler = joblib.load("./output_models/scaler.dat")
-le=joblib.load("./output_models/label_en.dat")
+scaler = joblib.load(scale_file_name)
+le=joblib.load(label_encoder_filename)
 
 flatten_2d=X_test.reshape(X_test.shape[0]*X_test.shape[1],X_test.shape[2])
 orig_shape=X_test.shape
@@ -194,6 +196,7 @@ y_test_hot = np_utils.to_categorical(y_test, num_classes)
 
 # In[1
 
+classifier = load_model(output_model_dir+'Model44_0.91.h5')
 y_pred_test = classifier.predict(X_test)
 # Take the class with the highest probability from the test predictions
 max_y_pred_test = np.argmax(y_pred_test, axis=1)

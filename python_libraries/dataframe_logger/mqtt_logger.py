@@ -12,8 +12,7 @@ import pandas as pd
 import sys
 import time
 
-list = []
-
+data_path="../../data/real_world_test/"
 # Don't forget to change the variables for the MQTT broker!
 mqtt_username = "knee_brace"
 mqtt_password = "knee_brace"
@@ -109,5 +108,5 @@ for data in list:
         readings = []
 print(len(dataset))
 df = pd.DataFrame(dataset, columns=table_fields)
-df.to_csv(action + ".csv")
+df.to_csv(data_path+ action + ".csv")
 print("ending ")

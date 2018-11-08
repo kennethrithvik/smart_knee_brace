@@ -49,47 +49,6 @@ client.on_message = on_message  # attach function to callback
 client.on_disconnect = on_disconnect
 client.connect(mqtt_broker_ip, 1883)
 
-table_fields = {
-    # "id":"integer primary key autoincrement",
-    "timestamp": "real",
-    "top_accel_x": "real",
-    "top_accel_y": "real",
-    "top_accel_z": "real",
-    "top_mag_x": "real",
-    "top_mag_y": "real",
-    "top_mag_z": "real",
-    "top_gy_x": "real",
-    "top_gy_y": "real",
-    "top_gy_z": "real",
-    "top_q0": "real",
-    "top_qx": "real",
-    "top_qy": "real",
-    "top_qz": "real",
-    "top_yaw": "real",
-    "top_pitch": "real",
-    "top_roll": "real",
-    "top_temperature": "real",
-    "bottom_accel_x": "real",
-    "bottom_accel_y": "real",
-    "bottom_accel_z": "real",
-    "bottom_mag_x": "real",
-    "bottom_mag_y": "real",
-    "bottom_mag_z": "real",
-    "bottom_gy_x": "real",
-    "bottom_gy_y": "real",
-    "bottom_gy_z": "real",
-    "bottom_q0": "real",
-    "bottom_qx": "real",
-    "bottom_qy": "real",
-    "bottom_qz": "real",
-    "bottom_yaw": "real",
-    "bottom_pitch": "real",
-    "bottom_roll": "real",
-    "bottom_temperature": "real",
-    "action": "text"
-}
-action=sys.argv[1]
-
 print("starting")
 client.loop_start()
 
@@ -112,16 +71,15 @@ def animate(i, xs, ys):
             continue
         readings.append(data)
         if (len(readings) == 35):
-            readings.append(action)
-            test=float(readings[1])
-            print(test)
-
+            x=float(readings[1])
+            y = float(readings[2])
+            z = float(readings[3])
             dataset.append(readings)
             readings = []
 
     # Add x and y to lists
     xs.append(dt.datetime.now().strftime('%M:%S.%f'))
-    ys.append(test)
+    ys.append([x,y,z])
     # Limit x and y lists to 20 items
     xs = xs[-20:]
     ys = ys[-20:]
@@ -133,8 +91,8 @@ def animate(i, xs, ys):
     # Format plot
     plt.xticks(rotation=45, ha='right')
     plt.subplots_adjust(bottom=0.30)
-    plt.title('top-accel x-axis')
-    plt.ylabel('top-accel x')
+    plt.title('top-accel')
+    plt.ylabel('top-accel')
 
 
 # Set up plot to call animate() function periodically
