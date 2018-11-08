@@ -102,3 +102,4 @@ ENV/
 .idea/
 *.db-shm
 *.db-wal
+configs/
