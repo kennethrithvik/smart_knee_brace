@@ -4,7 +4,6 @@ import glob
 from sklearn.model_selection import train_test_split
 from keras.utils import np_utils
 
-
 # In[1]:
 #prepare data
 
@@ -34,7 +33,7 @@ for file in train_files:
 ##split into train and test
 
 X_train, X_test, y_train, y_test =\
-    train_test_split(window_array, labels, test_size=0.2, random_state=13)
+    train_test_split(window_array, labels, test_size=0.001, random_state=13)
 
 np.save(data_path+"train",X_train)
 np.save(data_path+"train_lablel",y_train)
@@ -82,7 +81,7 @@ print('input_shape:', input_shape)
 # In[1]:
 
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Reshape, LSTM
+from keras.layers import Dense, Dropout, Flatten, Reshape, LSTM, TimeDistributed
 from keras.optimizers import SGD,rmsprop,Adam
 ##define model
 
@@ -92,6 +91,7 @@ model.add(LSTM(activation="sigmoid", return_sequences=True, units=256, recurrent
 model.add(Dropout(0.5))
 model.add(LSTM(activation="sigmoid", units=256, recurrent_activation="hard_sigmoid"))
 model.add(Dropout(0.5))
+#model.add(TimeDistributed(Dense(window_size)))
 model.add(Dense(100, activation='relu'))
 #model.add(Flatten())
 model.add(Dense(num_classes, activation='softmax'))
@@ -126,8 +126,8 @@ early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.0001,
 
 callbacks_list=[tensorboard,checkpointer,early_stopping]
 
-BATCH_SIZE = 400
-EPOCHS = 50
+BATCH_SIZE = 75
+EPOCHS = 100
 
 history = model.fit(X_train,
                       y_train_hot,
@@ -196,7 +196,7 @@ y_test_hot = np_utils.to_categorical(y_test, num_classes)
 
 # In[1
 
-classifier = load_model(output_model_dir+'Model44_0.91.h5')
+classifier = load_model(output_model_dir+'Model03_0.95.h5')
 y_pred_test = classifier.predict(X_test)
 # Take the class with the highest probability from the test predictions
 max_y_pred_test = np.argmax(y_pred_test, axis=1)

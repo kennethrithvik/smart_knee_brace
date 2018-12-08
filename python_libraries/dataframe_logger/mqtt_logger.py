@@ -12,7 +12,7 @@ import pandas as pd
 import sys
 import time
 
-data_path="../../data/real_world_test/"
+data_path="../../data/"
 # Don't forget to change the variables for the MQTT broker!
 mqtt_username = "knee_brace"
 mqtt_password = "knee_brace"

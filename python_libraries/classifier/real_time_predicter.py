@@ -7,6 +7,7 @@ import paho.mqtt.client as mqtt
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import datetime as dt
+import time
 
 # In[1]
 mqtt_username = "knee_brace"
@@ -43,6 +44,7 @@ client.on_disconnect = on_disconnect
 client.connect(mqtt_broker_ip, 1883)
 print("starting")
 client.loop_start()
+time.sleep(2)
 
 # In[1]
 
@@ -51,7 +53,7 @@ scale_file_name=output_model_dir+"scaler.dat"
 label_encoder_filename=output_model_dir+"label_en.dat"
 window_size=18
 num_sensors=32
-classifier = load_model(output_model_dir+'Model44_0.91.h5')
+classifier = load_model(output_model_dir+'Model41_1.00.h5')
 scaler = joblib.load(scale_file_name)
 le=joblib.load(label_encoder_filename)
 
@@ -107,12 +109,14 @@ def animate(i, list ,dataset, xs, ys):
     y_pred_test = classifier.predict(X_test)
     max_y_pred_test = np.argmax(y_pred_test, axis=1)
     y_pred = le.inverse_transform(max_y_pred_test)
+    #if y_pred[0]=="chair_situp":
+    #    y_pred[0]="Walking"
     ax.clear()
 
     #display result
     time = str(dt.datetime.now().strftime('%M:%S'))
     plt.title("Second: "+time +"--> "+y_pred[0])
-
+    print("Second: " , time , "--> " , y_pred[0])
     # Add x and y to lists
     xs.append(dt.datetime.now().strftime('%M:%S'))
     ys.append([x, y, z])
